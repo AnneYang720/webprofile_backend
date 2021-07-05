@@ -1,18 +1,12 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
-import redis
 from flask import Flask, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
-from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail
+from backend.config import APP_ENV, config  
 
-from config import APP_ENV, config  
-
-db = SQLAlchemy()
-mail = Mail()
-redis_conn = None
+db = None
 
 def setupLogging(level):
     '''创建日志记录'''
@@ -38,22 +32,14 @@ def creat_app():
     app = Flask(__name__)
     app.config.from_object(config[APP_ENV])
 
-    CORS(app, resources=r'/*')
-
-    # app.after_request(after_request)
-
-    #创建Redis数据库连接对象
-    # global redis_conn
-    # redis_conn = redis.StrictRedis(host=config[APP_ENV].REDIS_HOST, port=config[APP_ENV].REDIS_PORT)
-    # db.init_app(app)
+    # CORS(app, resources=r'/*')
 
     # 创建MongoDB数据库连接对象
-    app.config["MONGO_URI"] = "mongodb://localhost:27017/todo_db"
-    mongodb_client = PyMongo(app)
-    db = mongodb_client.db
+    mongo_conn = PyMongo.MongoClient(host=config[APP_ENV].MONGO_HOST,port=config[APP_ENV].MONGO_PORT, username=config[APP_ENV].MONGO_USERNAME, password=config[APP_ENV].MONGO_PWD)
+    db = mongo_conn[config[APP_ENV].MONGO_DATABASE] # Select the database
 
-    #注册api_v1_0 蓝图
-    from app.api_v1 import api
+    #注册 api 蓝图
+    from backend.api import api
     app.register_blueprint(api, url_prefix='/api/v1.0')
 
     return app

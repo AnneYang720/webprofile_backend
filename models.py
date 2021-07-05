@@ -9,13 +9,10 @@ from . import db
 
 #用户模型
 class User(db.Model):
-    __tablename__ = 'user'
-
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, index=True)
-    password_hash = db.Column(db.String(128))
-    join_time = db.Column(db.DateTime, default=datetime.utcnow)
-    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    def __init__(self, id):
+        self.id = id
+        self.email = None
+        self.password_hash = None
 
     # 禁止读取密码
     @property
@@ -60,6 +57,17 @@ class User(db.Model):
             'user_id': self.id,
             'email': self.email,
         }
+    
+    def save(self):
+        self.id = app.mongo.db.user.insert({
+                "password_hash": self.password_hash,
+                "email": self.email,
+                "createtedAt": datetime.now()
+            })
+        if self.id:
+            return True
+        else:
+            return False
 
     def __repr__(self):
         return '<User %r>' % self.email
