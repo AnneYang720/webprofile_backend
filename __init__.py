@@ -4,6 +4,7 @@ from logging.handlers import RotatingFileHandler
 import redis
 from flask import Flask, request
 from flask_cors import CORS
+from flask_pymongo import PyMongo
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 
@@ -42,11 +43,14 @@ def creat_app():
     # app.after_request(after_request)
 
     #创建Redis数据库连接对象
-    global redis_conn
-    redis_conn = redis.StrictRedis(host=config[APP_ENV].REDIS_HOST, port=config[APP_ENV].REDIS_PORT)
+    # global redis_conn
+    # redis_conn = redis.StrictRedis(host=config[APP_ENV].REDIS_HOST, port=config[APP_ENV].REDIS_PORT)
+    # db.init_app(app)
 
-    db.init_app(app)
-    mail.init_app(app)
+    # 创建MongoDB数据库连接对象
+    app.config["MONGO_URI"] = "mongodb://localhost:27017/todo_db"
+    mongodb_client = PyMongo(app)
+    db = mongodb_client.db
 
     #注册api_v1_0 蓝图
     from app.api_v1 import api
