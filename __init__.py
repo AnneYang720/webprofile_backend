@@ -4,9 +4,11 @@ from logging.handlers import RotatingFileHandler
 from flask import Flask, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
+from flask_jwt_extended import JWTManager
 from backend.config import APP_ENV, config  
 
 db = None
+jwt = None
 
 def setupLogging(level):
     '''创建日志记录'''
@@ -37,6 +39,9 @@ def creat_app():
     # 创建MongoDB数据库连接对象
     mongo_conn = PyMongo.MongoClient(host=config[APP_ENV].MONGO_HOST,port=config[APP_ENV].MONGO_PORT, username=config[APP_ENV].MONGO_USERNAME, password=config[APP_ENV].MONGO_PWD)
     db = mongo_conn[config[APP_ENV].MONGO_DATABASE] # Select the database
+    
+    # Setup the Flask-JWT-Extended extension
+    jwt = JWTManager(app)
 
     #注册 api 蓝图
     from backend.api import api
