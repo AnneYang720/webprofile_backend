@@ -5,7 +5,7 @@ from flask import jsonify, current_app, g, request
 from functools import wraps
 from utils.response_code import RET
 
-from . import db
+from backend import db
 
 #用户模型
 class User(db.Model):
@@ -19,10 +19,8 @@ class User(db.Model):
     def password(self):
         raise AttributeError('密码不可访问')
 
-    # 生成hash密码
-    @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
+    def generate_password(self, password):
+        return generate_password_hash(password)
 
     # 密码验证，验证成功返回True,否则返回False
     def verify_password(self, password):
@@ -43,7 +41,7 @@ class User(db.Model):
             return None  # valid token, but expired
         except BadSignature:
             return None  # invalid token
-        user = User.query.get(data['id'])
+        user = db.users.find_one({"_id": data['id']})
         return user
 
     # 更新最后一次登录时间

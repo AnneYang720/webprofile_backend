@@ -2,7 +2,6 @@ import base64
 import ast
 import json
 from flask import g, current_app, jsonify, request,make_response
-from werkzeug.security import check_password_hash, generate_password_hash
 from flask_httpauth import HTTPBasicAuth
 auth = HTTPBasicAuth()
 
@@ -25,7 +24,7 @@ def signup():
     if user_cl.find_one({"email": email}) is not None:
         return jsonify(re_code=RET.DATAEXIST, flag=False, message='用户已存在')
 
-    userId = user_cl.insert({"email":email,"password":generate_password_hash(password)})
+    userId = user_cl.insert({"email":email,"password":User.generate_password(password)})
     if userId:
         return jsonify(re_code=RET.OK, flag=True, message='注册成功')
     else:
@@ -52,20 +51,25 @@ def login():
 
     if not user:
         return jsonify(code=RET.NODATA, flag=False, message='用户不存在', data=user)
-    if not check_password_hash(user['password'], password):
+    if not User.verify_password(user['password'], password):
         return jsonify(code=RET.PARAMERR, flag=False, message='帐户名或密码错误')
 
     #更新最后一次登录时间
-    token = user.generate_user_token()
+    token = User.generate_user_token()
     return jsonify(code=RET.OK, flag=True, message='登录成功', token=token)
 
+# 登录后的首页
+@api.route('/')
+@auth.login_required
+def get_resource():
+    return jsonify({'data': 'Hello, %s!' % g.user.email})
 
 
 @auth.verify_password
 def verify_password(email_or_token, password):
     if request.path == '/login':
-        user = User.query.filter_by(email=email_or_token).first()
-        if not user or not user.verify_password(password):
+        user = user_cl.find_one({"email": email_or_token})
+        if not user or not User.verify_password(user['password'], password):
             return False
     else:
         user = User.verify_user_token(email_or_token)
@@ -75,14 +79,7 @@ def verify_password(email_or_token, password):
     return True
 
 
-
 @auth.error_handler
 def unauthorized():
     return make_response(jsonify({'error': 'Unauthorized access'}), 401)
 
-
-
-@api.route('/')
-@auth.login_required
-def get_resource():
-    return jsonify({'data': 'Hello, %s!' % g.user.email})
