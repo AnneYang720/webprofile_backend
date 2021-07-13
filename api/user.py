@@ -1,6 +1,4 @@
 import base64
-import ast
-import json
 from flask import g, current_app, jsonify, request,make_response
 from flask_httpauth import HTTPBasicAuth
 auth = HTTPBasicAuth()
