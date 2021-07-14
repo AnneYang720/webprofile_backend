@@ -1,17 +1,15 @@
 import base64
-from flask import g, current_app, jsonify, request,make_response
-from flask_httpauth import HTTPBasicAuth
-auth = HTTPBasicAuth()
+from flask import Blueprint, g, current_app, jsonify, request,make_response
 
-from backend import db, jwt
-from backend.api import api
-from backend.models import User
+from backend.manage import db, jwt, token_auth
+from backend.api.models import User
 from backend.utils.response_code import RET
 
+user = Blueprint('user', __name__)
 user_cl = db.users # select the collection
 
 # 用户注册接口
-@api.route('/signup', methods=['POST'])
+@user.route('/signup', methods=['POST'])
 def signup():
     email =request.json.get('email')
     password =request.json.get('password')
@@ -30,13 +28,10 @@ def signup():
 
 
 # 用户登录
-@api.route('/login', methods=['POST'])
+@user.route('/login', methods=['POST'])
 def login():
     email = request.json.get('email')
     password = request.json.get('password')
-
-    #解析Authorization
-    #email, password = base64.b64decode(request.headers['Authorization'].split(' ')[-1]).decode().split(':')
 
     if not all([email, password]):
         return jsonify(code=RET.PARAMERR, flag=False, message='参数不完整')
@@ -56,28 +51,18 @@ def login():
     token = User.generate_user_token()
     return jsonify(code=RET.OK, flag=True, message='登录成功', token=token)
 
-# 登录后的首页
-@api.route('/')
-@auth.login_required
-def get_resource():
-    return jsonify({'data': 'Hello, %s!' % g.user.email})
 
-
-@auth.verify_password
-def verify_password(email_or_token, password):
-    if request.path == '/login':
-        user = user_cl.find_one({"email": email_or_token})
-        if not user or not User.verify_password(user['password'], password):
-            return False
-    else:
-        user = User.verify_user_token(email_or_token)
-        if not user:
-            return False
+@token_auth.verify_token
+def verify_token(token):
+    user = User.verify_auth_token(token)
+    if not user:
+        return False
     g.user = user
     return True
 
+@token_auth.error_handler
+def tokenUnauthorized():
+    return jsonify(code=RET.SESSIONERR, flag=False, message='登录过期')
 
-@auth.error_handler
-def unauthorized():
-    return make_response(jsonify({'error': 'Unauthorized access'}), 401)
 
+# TODO:前端设置token
