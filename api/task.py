@@ -58,7 +58,7 @@ def createTask():
         response_headers={"response-content-type": "application/json"},
     )
     
-    return jsonify(code=RET.OK, flag=True, message='生成url成功', data={"mgeUrl":mge_url,"dataUrl":data_url,"taskId":taskId})
+    return jsonify(code=RET.OK, flag=True, message='生成上传url成功', data={"mgeUrl":mge_url,"dataUrl":data_url,"taskId":taskId})
 
 
 
@@ -84,3 +84,30 @@ def getTasksList(page,size):
     page -= 1 # skip page
     userId = g.user['_id'] # get userid
     task_cl.find({"userId":userId},{ "_id": 1, "mge_name": 1, "data_name": 1, "platform": 1, "updateTime": 1, "version": 1, "state": 1 }).skip(page*size).limit(size)
+
+# 获取当前用户的所有task信息
+@task.route('/task/getdownloadurl/<taskId>', methods=['GET'])
+@token_auth.login_required
+def getTasksList(taskId):
+    
+    userId = g.user['_id'] # get userid
+    # 对象存储路径
+    mge_key = "mge/"+userId+"/"+ taskId
+    data_key = "data/"+userId+"/"+ taskId
+
+    # Get presigned URL string to download 'my-object' in
+    # 'my-bucket' with two hours expiry.
+    mge_url = client.get_presigned_url(
+        method="GET",
+        bucket_name="my-bucket",
+        object_name=mge_key,
+        expires=timedelta(hours=2),
+    )
+    data_url = client.get_presigned_url(
+        method="GET",
+        bucket_name="my-bucket",
+        object_name=data_key,
+        expires=timedelta(days=1),
+    )
+
+    return jsonify(code=RET.OK, flag=True, message='生成下载url成功', data={"mgeUrl":mge_url,"dataUrl":data_url})
