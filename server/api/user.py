@@ -1,9 +1,9 @@
 import base64
 from flask import Blueprint, g, current_app, jsonify, request,make_response
 
-from backend.manage import db, jwt, token_auth
-from backend.api.models import User
-from backend.utils.response_code import RET
+from backend.server.manage import db, jwt, token_auth
+from backend.server.api.models import User
+from backend.server.utils.response_code import RET
 
 user = Blueprint('user', __name__)
 user_cl = db.users # select the collection

@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 from flask import jsonify, current_app, g, request
 from functools import wraps
-from utils.response_code import RET
+from ..utils.response_code import RET
 
 from backend import db
 

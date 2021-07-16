@@ -2,8 +2,8 @@ import base64
 import time
 from flask import Blueprint, g, jsonify, request
 
-from backend.manage import db, jwt, token_auth, client
-from backend.utils.response_code import RET
+from backend.server.manage import db, jwt, token_auth, client
+from backend.server.utils.response_code import RET
 from datetime import timedelta
 
 task = Blueprint('task', __name__)
@@ -32,12 +32,12 @@ def createTask():
         "version":version,
         "updateTime":time.time(),
         "state":"initiated",
-        "profile_txt":None
+        "output_key":None
     })
 
     # 对象存储路径
-    mge_key = "mge/"+userId+"/"+ taskId
-    data_key = "data/"+userId+"/"+ taskId
+    mge_key = "mge/"+ taskId
+    data_key = "data/"+ taskId
 
     # save object to mongodb 
     task_cl.update({"_id":taskId},{"$set":{"mge_key":mge_key,"data_key":data_key}})
@@ -90,10 +90,9 @@ def getTasksList(page,size):
 @token_auth.login_required
 def getTasksList(taskId):
     
-    userId = g.user['_id'] # get userid
     # 对象存储路径
-    mge_key = "mge/"+userId+"/"+ taskId
-    data_key = "data/"+userId+"/"+ taskId
+    mge_key = "mge/"+ taskId
+    data_key = "data/"+ taskId
 
     # Get presigned URL string to download 'my-object' in
     # 'my-bucket' with two hours expiry.
@@ -111,3 +110,30 @@ def getTasksList(taskId):
     )
 
     return jsonify(code=RET.OK, flag=True, message='生成下载url成功', data={"mgeUrl":mge_url,"dataUrl":data_url})
+
+# worker上任务运行/完成/失败，更新数据库中任务状态
+@task.route('/task/updatestate', methods=['POST'])
+@token_auth.login_required
+def saveTaskInfo():
+    taskId = request.form.get('taskId')
+    state = request.form.get('state')
+
+    # 如果任务开始运行，更新状态并返回
+    if state == "running":
+        task_cl.update({"_id":taskId},{"$set":{"updateTime":time.time(), "state":state}})
+        return jsonify(code=RET.OK, flag=True, message='任务状态更新成功')
+
+    # 任务完成（成功or失败）
+    output_key = "output/"+ taskId
+
+    output_url = client.get_presigned_url(
+        method="PUT",
+        bucket_name="my-bucket",
+        object_name=output_key,
+        expires=timedelta(days=1),
+        response_headers={"response-content-type": "application/json"},
+    )
+    
+    task_cl.update({"_id":taskId},{"$set":{"updateTime":time.time(), "state":state,"output_key":output_key}})
+
+    return jsonify(code=RET.OK, flag=True, message='任务状态更新成功',output_url=output_url)

@@ -3,7 +3,7 @@ from logging.handlers import RotatingFileHandler
 
 from flask import Flask, request
 from flask_cors import CORS
-from backend.config import APP_ENV, config  
+from backend.server.config import APP_ENV, config  
 
 
 def setupLogging(level):

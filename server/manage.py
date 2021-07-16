@@ -6,7 +6,7 @@ from flask_pymongo import PyMongo
 from flask_httpauth import HTTPTokenAuth
 from flask_jwt_extended import JWTManager
 from minio import Minio
-from backend.config import APP_ENV, config
+from backend.server.config import APP_ENV, config
 
 app = creat_app()
 manager = Manager(app)
