@@ -33,7 +33,7 @@ def creat_app():
     # CORS(app, resources=r'/*')
 
     #注册 api 蓝图
-    from backend.api import api
+    from backend.server.api import api
     app.register_blueprint(api, url_prefix='/api')
 
     return app
