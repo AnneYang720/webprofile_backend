@@ -6,6 +6,8 @@ from server.utils.response_code import RET
 from server.api import task_blue
 from datetime import timedelta
 from bson.objectid import ObjectId
+import json
+from bson import json_util
 
 task_cl = db.tasks # select the collection
 
@@ -84,7 +86,12 @@ def saveTaskInfo():
 def getTasksList(page,size):
     page -= 1 # skip page
     userId = g.user['_id'] # get userid
-    task_cl.find({"userId":userId},{ "_id": 1, "mge_name": 1, "data_name": 1, "platform": 1, "updateTime": 1, "version": 1, "state": 1 }).skip(page*size).limit(size)
+    total = task_cl.find({"userId":userId}).count()
+    data = task_cl.find({"userId":userId},{ "_id": 1, "mge_name": 1, "data_name": 1, "platform": 1, "updateTime": 1, "version": 1, "state": 1 }).skip(page*size).limit(size)
+    docs = list(data)
+    for doc in docs:
+        doc["_id"] = str(doc["_id"])
+    return jsonify(code=RET.OK, flag=True, message='获取所有任务信息成功', data={"total":total,"rows":docs})
 
 # 获取task信息
 @task_blue.route('/getdownloadurl/<taskId>', methods=['GET'])

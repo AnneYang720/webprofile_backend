@@ -29,7 +29,7 @@ mongo_conn = MongoClient(host=config[APP_ENV].MONGO_HOST,port=config[APP_ENV].MO
 db = mongo_conn[config[APP_ENV].MONGO_DATABASE] # Select the database
 
 if __name__ == "__main__":
-    print(app.url_map)
+    # print(app.url_map)
     manager.debug = True
     manager.run()
 
