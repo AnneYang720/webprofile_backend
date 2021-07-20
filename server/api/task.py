@@ -5,6 +5,7 @@ from server.manage import db, token_auth, client
 from server.utils.response_code import RET
 from server.api import task_blue
 from datetime import timedelta
+from bson.objectid import ObjectId
 
 task_cl = db.tasks # select the collection
 
@@ -35,8 +36,8 @@ def createTask():
     })
 
     # 对象存储路径
-    mge_key = "mge/"+ taskId
-    data_key = "data/"+ taskId
+    mge_key = "mge/"+ str(taskId)
+    data_key = "data/"+ str(taskId)
 
     # save object to mongodb 
     task_cl.update({"_id":taskId},{"$set":{"mge_key":mge_key,"data_key":data_key}})
@@ -57,7 +58,7 @@ def createTask():
         response_headers={"response-content-type": "application/json"},
     )
     
-    return jsonify(code=RET.OK, flag=True, message='生成上传url成功', data={"mgeUrl":mge_url,"dataUrl":data_url,"taskId":taskId})
+    return jsonify(code=RET.OK, flag=True, message='生成上传url成功', data={"mgeUrl":mge_url,"dataUrl":data_url,"taskId":str(taskId)})
 
 
 
@@ -68,11 +69,11 @@ def saveTaskInfo():
     taskId = request.form.get('taskId')
     saveFlag = request.form.get('saveFlag')
 
-    if saveFlag:
+    if saveFlag=="True":
         # save object to mongodb 
-        task_cl.update({"_id":taskId},{"$set":{"updateTime":time.time(), "state":"waiting"}})
+        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":time.time(), "state":"waiting"}})
     else :
-        task_cl.delete_one({"_id":taskId})
+        task_cl.delete_one({"_id":ObjectId(taskId)})
     
     return jsonify(code=RET.OK, flag=True, message='任务状态更新成功')
 

@@ -1,4 +1,4 @@
-from server import creat_app
+from server import create_app
 from flask_script import Manager
 from pymongo import MongoClient
 from flask_httpauth import HTTPTokenAuth
@@ -6,7 +6,7 @@ from flask_httpauth import HTTPTokenAuth
 from minio import Minio
 from server.config import APP_ENV, config
 
-app = creat_app()
+app = create_app()
 
 manager = Manager(app)
 

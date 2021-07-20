@@ -20,7 +20,7 @@ def setupLogging(level):
     #为全局添加日志记录器
     logging.getLogger().addHandler(file_log_handler)
 
-def creat_app():
+def create_app():
     '''
     工厂函数，创建APP实例
     :return app实例
