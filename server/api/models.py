@@ -3,12 +3,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 from flask import jsonify, current_app, g, request
 from functools import wraps
-from ..utils.response_code import RET
+from server.utils.response_code import RET
 
-from backend import db
+from server.manage import db
 
 #用户模型
-class User(db.Model):
+class User():
     def __init__(self, id):
         self.id = id
         self.email = None

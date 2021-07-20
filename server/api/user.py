@@ -1,15 +1,13 @@
-import base64
 from flask import Blueprint, g, current_app, jsonify, request,make_response
 
-from backend.server.manage import db, jwt, token_auth
-from backend.server.api.models import User
-from backend.server.utils.response_code import RET
-
-user = Blueprint('user', __name__)
+from server.manage import db, token_auth
+from server.api.models import User
+from server.utils.response_code import RET
+from server.api import user_blue
 user_cl = db.users # select the collection
 
 # 用户注册接口
-@user.route('/signup', methods=['POST'])
+@user_blue.route('/signup', methods=['POST'])
 def signup():
     email =request.json.get('email')
     password =request.json.get('password')
@@ -28,7 +26,7 @@ def signup():
 
 
 # 用户登录
-@user.route('/login', methods=['POST'])
+@user_blue.route('/login', methods=['POST'])
 def login():
     email = request.json.get('email')
     password = request.json.get('password')

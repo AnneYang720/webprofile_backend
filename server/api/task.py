@@ -1,16 +1,15 @@
-import base64
 import time
 from flask import Blueprint, g, jsonify, request
 
-from backend.server.manage import db, jwt, token_auth, client
-from backend.server.utils.response_code import RET
+from server.manage import db, token_auth, client
+from server.utils.response_code import RET
+from server.api import task_blue
 from datetime import timedelta
 
-task = Blueprint('task', __name__)
 task_cl = db.tasks # select the collection
 
 # 新建项目
-@task.route('/task/createurl', methods=['GET'])
+@task_blue.route('/createurl', methods=['GET'])
 @token_auth.login_required
 def createTask():
     platform = request.form.get('platform')
@@ -45,14 +44,14 @@ def createTask():
     # 设置minio
     mge_url = client.get_presigned_url(
         method="PUT",
-        bucket_name="my-bucket",
+        bucket_name="minio-webprofile",
         object_name=mge_key,
         expires=timedelta(days=1),
         response_headers={"response-content-type": "application/json"},
     )
     data_url = client.get_presigned_url(
         method="PUT",
-        bucket_name="my-bucket",
+        bucket_name="minio-webprofile",
         object_name=data_key,
         expires=timedelta(days=1),
         response_headers={"response-content-type": "application/json"},
@@ -63,7 +62,7 @@ def createTask():
 
 
 # mge、data文件上传成功，更新数据库中任务状态
-@task.route('/task/savetaskinfo', methods=['POST'])
+@task_blue.route('/savetaskinfo', methods=['POST'])
 @token_auth.login_required
 def saveTaskInfo():
     taskId = request.form.get('taskId')
@@ -77,18 +76,19 @@ def saveTaskInfo():
     
     return jsonify(code=RET.OK, flag=True, message='任务状态更新成功')
 
+
 # 获取当前用户的所有task信息
-@task.route('/task/getlist/<int:page>/<int:size>', methods=['GET'])
+@task_blue.route('/getlist/<int:page>/<int:size>', methods=['GET'])
 @token_auth.login_required
 def getTasksList(page,size):
     page -= 1 # skip page
     userId = g.user['_id'] # get userid
     task_cl.find({"userId":userId},{ "_id": 1, "mge_name": 1, "data_name": 1, "platform": 1, "updateTime": 1, "version": 1, "state": 1 }).skip(page*size).limit(size)
 
-# 获取当前用户的所有task信息
-@task.route('/task/getdownloadurl/<taskId>', methods=['GET'])
+# 获取task信息
+@task_blue.route('/getdownloadurl/<taskId>', methods=['GET'])
 @token_auth.login_required
-def getTasksList(taskId):
+def getTasksUrl(taskId):
     
     # 对象存储路径
     mge_key = "mge/"+ taskId
@@ -98,13 +98,13 @@ def getTasksList(taskId):
     # 'my-bucket' with two hours expiry.
     mge_url = client.get_presigned_url(
         method="GET",
-        bucket_name="my-bucket",
+        bucket_name="minio-webprofile",
         object_name=mge_key,
         expires=timedelta(hours=2),
     )
     data_url = client.get_presigned_url(
         method="GET",
-        bucket_name="my-bucket",
+        bucket_name="minio-webprofile",
         object_name=data_key,
         expires=timedelta(days=1),
     )
@@ -112,9 +112,9 @@ def getTasksList(taskId):
     return jsonify(code=RET.OK, flag=True, message='生成下载url成功', data={"mgeUrl":mge_url,"dataUrl":data_url})
 
 # worker上任务运行/完成/失败，更新数据库中任务状态
-@task.route('/task/updatestate', methods=['POST'])
+@task_blue.route('/updatestate', methods=['POST'])
 @token_auth.login_required
-def saveTaskInfo():
+def saveWorkerTaskInfo():
     taskId = request.form.get('taskId')
     state = request.form.get('state')
 
@@ -128,7 +128,7 @@ def saveTaskInfo():
 
     output_url = client.get_presigned_url(
         method="PUT",
-        bucket_name="my-bucket",
+        bucket_name="minio-webprofile",
         object_name=output_key,
         expires=timedelta(days=1),
         response_headers={"response-content-type": "application/json"},

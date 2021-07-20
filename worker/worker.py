@@ -22,19 +22,22 @@ with open("data.npy", "wb") as data:
 
 # 更新状态至running
 formdata = {"taskId":taskId,"state":"running"}
+# request
 
 # 运行load and run
 ret = subprocess.run(['load_and_run',mge,'--input',data,'--profile','profile.txt'], capture_output=True, stderr=subprocess.STDOUT)
-#load_and_run resnet50.mge --input resnet.npy --profile profilec.json
+#load_and_run resnet50.mge --input resnet.npy --profile profilec.txt
 
 # 更新状态，存储结果至对象存储
 if ret.returncode == 0:
     finalformdata = {"taskId":taskId,"state":"successed"}
     output = { 'file' : open('./profile.txt', 'r')}
+    # 留下输出，有运行时间
 else:
     finalformdata = {"taskId":taskId,"state":"failed"}
     with open("output.txt", "wb") as data:
         data.write(ret.stdout)
     output = { 'file' : open('./output.txt', 'r')}
+
 r_updatestate = requests.post(baseUrl+'task/updatestate',data = finalformdata)
 r_uploadoutput = requests.post(r_updatestate.output_url,files=output)
