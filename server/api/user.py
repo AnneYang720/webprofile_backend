@@ -1,9 +1,10 @@
-from flask import Blueprint, g, current_app, jsonify, request,make_response
+from flask import g, current_app, jsonify, request,make_response
 
 from server.manage import db, token_auth
 from server.api.models import User
 from server.utils.response_code import RET
 from server.api import user_blue
+
 user_cl = db.users # select the collection
 
 # 用户注册接口
@@ -44,9 +45,9 @@ def login():
         return jsonify(code=RET.NODATA, flag=False, message='用户不存在', data=user)
     if not User.verify_password(user['password'], password):
         return jsonify(code=RET.PARAMERR, flag=False, message='帐户名或密码错误')
-
+    
     #更新最后一次登录时间
-    token = User.generate_user_token()
+    token = User.generate_user_token(user['_id'])
     return jsonify(code=RET.OK, flag=True, message='登录成功', token=token)
 
 

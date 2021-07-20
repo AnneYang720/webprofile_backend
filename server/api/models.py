@@ -19,17 +19,18 @@ class User():
     def password(self):
         raise AttributeError('密码不可访问')
 
-    def generate_password(self, password):
+    def generate_password(password):
         return generate_password_hash(password)
 
     # 密码验证，验证成功返回True,否则返回False
-    def verify_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    def verify_password(password_hash, password):
+        return check_password_hash(password_hash, password)
 
     # 生成确认身份的Token(密令)
-    def generate_user_token(self, expiration=43200):
+    def generate_user_token(id, expiration=43200):
+        id = str(id)
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
-        return s.dumps({'id': self.id}).decode('utf-8')
+        return s.dumps({'id': id}).decode('utf-8')
  
     # 解析token，确认登录的用户身份
     @staticmethod
