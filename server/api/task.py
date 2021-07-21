@@ -93,7 +93,7 @@ def getTasksList(page,size):
         doc["_id"] = str(doc["_id"])
     return jsonify(code=RET.OK, flag=True, message='获取所有任务信息成功', data={"total":total,"rows":docs})
 
-# 获取task信息
+# worker获取task文件的下载url
 @task_blue.route('/getdownloadurl/<taskId>', methods=['GET'])
 @token_auth.login_required
 def getTasksUrl(taskId):
@@ -128,7 +128,7 @@ def saveWorkerTaskInfo():
 
     # 如果任务开始运行，更新状态并返回
     if state == "running":
-        task_cl.update({"_id":taskId},{"$set":{"updateTime":time.time(), "state":state}})
+        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":time.time(), "state":state}})
         return jsonify(code=RET.OK, flag=True, message='任务状态更新成功')
 
     # 任务完成（成功or失败）
@@ -142,6 +142,6 @@ def saveWorkerTaskInfo():
         response_headers={"response-content-type": "application/json"},
     )
     
-    task_cl.update({"_id":taskId},{"$set":{"updateTime":time.time(), "state":state,"output_key":output_key}})
+    task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":time.time(), "state":state,"output_key":output_key}})
 
     return jsonify(code=RET.OK, flag=True, message='任务状态更新成功',output_url=output_url)
