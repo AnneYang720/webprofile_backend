@@ -1,43 +1,56 @@
 import requests
 import subprocess
+import json
 
-taskId = '12345'
-baseUrl = 'http://easy-mock.anneyang.me/mock/60e04f49e235063d5506456a/webprofile/'
+taskId = '60f67eece67df199b77b7572'
+baseUrl = 'http://localhost:5000'
 
-r_geturl = requests.get(baseUrl+'task/getdownloadurl/'+taskId)
+r_geturl = requests.get(baseUrl+'/task/getdownloadurl/'+str(taskId),headers={'content-type':'application/json'})
 
-if r_geturl.flag:
-    mge_url = r_geturl.data.mgeUrl
-    data_url = r_geturl.data.dataUrl
+result = r_geturl.json()
+
+if result['flag']:
+    mge_url = result['data']['mgeUrl']
+    data_url = result['data']['dataUrl']
 else:
     exit()
 
 r_download_mge = requests.get(mge_url)
-with open("model.mge", "wb") as mge:
+with open("./model.mge", "wb") as mge:
     mge.write(r_download_mge.content)
+mge.close()
 
 r_download_data = requests.get(data_url)
-with open("data.npy", "wb") as data:
+with open("./data.npy", "wb") as data:
     data.write(r_download_data.content)
+data.close()
 
 # 更新状态至running
 formdata = {"taskId":taskId,"state":"running"}
-# request
+r_update = requests.post(baseUrl+'/task/updatestate',data = formdata)
+
 
 # 运行load and run
-ret = subprocess.run(['load_and_run',mge,'--input',data,'--profile','profile.txt'], capture_output=True, stderr=subprocess.STDOUT)
-#load_and_run resnet50.mge --input resnet.npy --profile profilec.txt
+try:
+    p = subprocess.Popen(['load_and_run ./model.mge --input ./data.npy --profile ./profile.txt'], shell=True, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
 
-# 更新状态，存储结果至对象存储
-if ret.returncode == 0:
-    finalformdata = {"taskId":taskId,"state":"successed"}
-    output = { 'file' : open('./profile.txt', 'r')}
-    # 留下输出，有运行时间
-else:
-    finalformdata = {"taskId":taskId,"state":"failed"}
-    with open("output.txt", "wb") as data:
-        data.write(ret.stdout)
-    output = { 'file' : open('./output.txt', 'r')}
+    f1 = open("./output.txt", "wb")
+    f2 = open("./error.txt", "wb")
+    while True:
+        stdout,stderr = p.communicate()
+        f1.write(stdout)
+        f2.write(stderr)
+        if p.returncode == 0:
+            finalformdata = {"taskId":taskId,"state":"successed"}
+            output = { 'file' : open('./profile.txt', 'r')}
+            break
+        else:
+            finalformdata = {"taskId":taskId,"state":"failed"}
+            output = { 'file' : open('./error.txt', 'r')}
+            break
+except:
+    print("load-and-run failed")
 
-r_updatestate = requests.post(baseUrl+'task/updatestate',data = finalformdata)
-r_uploadoutput = requests.post(r_updatestate.output_url,files=output)
+r_updatestate = requests.post(baseUrl+'/task/updatestate',data = finalformdata)
+result = r_updatestate.json()
+r_uploadoutput = requests.put(result['output_url'],files=output)

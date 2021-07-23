@@ -95,7 +95,6 @@ def getTasksList(page,size):
 
 # worker获取task文件的下载url
 @task_blue.route('/getdownloadurl/<taskId>', methods=['GET'])
-@token_auth.login_required
 def getTasksUrl(taskId):
     
     # 对象存储路径
@@ -121,7 +120,6 @@ def getTasksUrl(taskId):
 
 # worker上任务运行/完成/失败，更新数据库中任务状态
 @task_blue.route('/updatestate', methods=['POST'])
-@token_auth.login_required
 def saveWorkerTaskInfo():
     taskId = request.form.get('taskId')
     state = request.form.get('state')
