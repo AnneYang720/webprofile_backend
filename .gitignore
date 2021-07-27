@@ -216,3 +216,6 @@ worker/data.npy
 worker/error.txt
 worker/model.mge
 worker/output.txt
+
+server/config.py
+
