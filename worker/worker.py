@@ -2,7 +2,7 @@ import requests
 import subprocess
 import json
 
-taskId = '60f67eece67df199b77b7572'
+taskId = '6100c8fceaf731e62c42f807'
 baseUrl = 'http://localhost:5000'
 
 r_geturl = requests.get(baseUrl+'/task/getdownloadurl/'+str(taskId),headers={'content-type':'application/json'})
@@ -32,7 +32,7 @@ r_update = requests.post(baseUrl+'/task/updatestate',data = formdata)
 
 # 运行load and run
 try:
-    p = subprocess.Popen(['load_and_run ./model.mge --input ./data.npy --profile ./profile.txt'], shell=True, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
+    p = subprocess.Popen(['load_and_run ./model.mge --input ./resnet.npy --profile ./profile.txt'], shell=True, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
 
     f1 = open("./output.txt", "wb")
     f2 = open("./error.txt", "wb")

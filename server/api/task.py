@@ -7,7 +7,6 @@ from server.api import task_blue
 from datetime import timedelta
 from bson.objectid import ObjectId
 import json
-from bson import json_util
 
 task_cl = db.tasks # select the collection
 
