@@ -1,12 +1,14 @@
 import time
-from flask import Blueprint, g, jsonify, request
+from flask import g, jsonify, request
+import requests
 
 from server.manage import db, token_auth, client
 from server.utils.response_code import RET
+from server.api.models import TaskArgs
 from server.api import task_blue
+from server.utils.profile_analyze import profile
 from datetime import timedelta
 from bson.objectid import ObjectId
-import json
 
 task_cl = db.tasks # select the collection
 
@@ -91,6 +93,49 @@ def getTasksList(page,size):
     for doc in docs:
         doc["_id"] = str(doc["_id"])
     return jsonify(code=RET.OK, flag=True, message='获取所有任务信息成功', data={"total":total,"rows":docs})
+
+# 获取当前用户的所有task ID
+@task_blue.route('/getidlist', methods=['GET'])
+@token_auth.login_required
+def getTasksID():
+    userId = g.user['_id'] # get userid
+    tasks = list(task_cl.find({"userId":userId},{ "_id": 1}))
+    data = []
+    for task in tasks:
+        data.append(str(task["_id"]))
+    return jsonify(code=RET.OK, flag=True, message='获取所有任务信息成功', data=data)
+
+
+# 获得任务Profile
+@task_blue.route('/taskprofile', methods=['POST'])
+@token_auth.login_required
+def taskProfile():
+    taskArgs = TaskArgs(request.form)
+    # get userid
+    userId = g.user['_id']
+
+    # # download profile.txt from minio
+    # output_key = "output/"+ taskArgs.taskId
+    # profile_url = client.get_presigned_url(
+    #     method="GET",
+    #     bucket_name="minio-webprofile",
+    #     object_name=output_key,
+    #     expires=timedelta(hours=2),
+    # )
+    # r_download_data = requests.get(profile_url)
+    # with open("./profile_"+taskArgs.taskId+".txt", "wb") as profile:
+    #     profile.write(r_download_data.content)
+    # profile.close()
+    # taskArgs.setProfilePath("./profile_"+taskArgs.taskId+".txt")
+
+    taskArgs.setProfilePath("/data/evangelineyang/mgedemo/backend/server/utils/profile.txt")
+    tot_dev_time,tot_host_time,deviceList,hostList = profile(taskArgs)
+
+    
+    return jsonify(code=RET.OK, flag=True, message='打印信息成功',tot_dev_time=tot_dev_time,tot_host_time=tot_host_time,deviceList=deviceList,hostList=hostList)
+
+
+
 
 # worker获取task文件的下载url
 @task_blue.route('/getdownloadurl/<taskId>', methods=['GET'])

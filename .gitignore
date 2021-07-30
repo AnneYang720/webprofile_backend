@@ -219,3 +219,4 @@ worker/output.txt
 worker/profile.txt
 
 server/config.py
+server/utils/profile.txt
