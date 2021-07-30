@@ -107,28 +107,27 @@ def getTasksID():
 
 
 # 获得任务Profile
+# TODO 解决安全问题（最简单：验证taskId格式）
 @task_blue.route('/taskprofile', methods=['POST'])
 @token_auth.login_required
 def taskProfile():
     taskArgs = TaskArgs(request.form)
-    # get userid
-    userId = g.user['_id']
 
-    # # download profile.txt from minio
-    # output_key = "output/"+ taskArgs.taskId
-    # profile_url = client.get_presigned_url(
-    #     method="GET",
-    #     bucket_name="minio-webprofile",
-    #     object_name=output_key,
-    #     expires=timedelta(hours=2),
-    # )
-    # r_download_data = requests.get(profile_url)
-    # with open("./profile_"+taskArgs.taskId+".txt", "wb") as profile:
-    #     profile.write(r_download_data.content)
-    # profile.close()
-    # taskArgs.setProfilePath("./profile_"+taskArgs.taskId+".txt")
+    # download profile.txt from minio
+    output_key = "output/"+ taskArgs.taskId
+    profile_url = client.get_presigned_url(
+        method="GET",
+        bucket_name="minio-webprofile",
+        object_name=output_key,
+        expires=timedelta(hours=2),
+    )
+    r_download_data = requests.get(profile_url)
+    with open("/data/evangelineyang/mgedemo/backend/server/api/profile_"+taskArgs.taskId+".txt", "wb") as data:
+        data.write(r_download_data.content)
+    data.close()
 
-    taskArgs.setProfilePath("/data/evangelineyang/mgedemo/backend/server/utils/profile.txt")
+    taskArgs.setProfilePath("/data/evangelineyang/mgedemo/backend/server/api/profile_"+taskArgs.taskId+".txt")
+
     tot_dev_time,tot_host_time,deviceList,hostList = profile(taskArgs)
 
     
