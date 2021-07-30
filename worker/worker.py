@@ -1,4 +1,5 @@
 import requests
+import shlex
 import subprocess
 import json
 
@@ -32,25 +33,18 @@ r_update = requests.post(baseUrl+'/task/updatestate',data = formdata)
 
 # 运行load and run
 try:
-    p = subprocess.Popen(['load_and_run ./model.mge --input ./resnet.npy --profile ./profile.txt'], shell=True, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
-
-    f1 = open("./output.txt", "wb")
-    f2 = open("./error.txt", "wb")
-    while True:
-        stdout,stderr = p.communicate()
-        f1.write(stdout)
-        f2.write(stderr)
-        if p.returncode == 0:
-            finalformdata = {"taskId":taskId,"state":"successed"}
-            output = { 'file' : open('./profile.txt', 'r')}
-            break
-        else:
-            finalformdata = {"taskId":taskId,"state":"failed"}
-            output = { 'file' : open('./error.txt', 'r')}
-            break
+    cmd = shlex.split('load_and_run model.mge --input data:data.npy --profile profile.txt')
+    p = subprocess.run(cmd, capture_output=True)
+    
+    if p.returncode == 0:
+        finalformdata = {"taskId":taskId,"state":"successed"}
+        output = open('./profile.txt', 'r').read()
+    else:
+        finalformdata = {"taskId":taskId,"state":"failed"}
+        output = p.stderr #p.stdout
 except:
     print("load-and-run failed")
 
 r_updatestate = requests.post(baseUrl+'/task/updatestate',data = finalformdata)
 result = r_updatestate.json()
-r_uploadoutput = requests.put(result['output_url'],files=output)
+r_uploadoutput = requests.put(result['output_url'],data=output)

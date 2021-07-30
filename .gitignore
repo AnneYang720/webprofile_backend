@@ -212,11 +212,10 @@ cython_debug/
 
 # End of https://www.toptal.com/developers/gitignore/api/flask,python
 server/logs/log
-worker/data.npy
-worker/error.txt
+worker/*.npy
+worker/*.txt
 worker/model.mge
-worker/output.txt
-worker/profile.txt
 
 server/config.py
 server/utils/profile.txt
+server/api/*.txt
