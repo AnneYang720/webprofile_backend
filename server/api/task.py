@@ -2,11 +2,12 @@ import time
 from flask import g, jsonify, request
 import requests
 
-from server.manage import db, token_auth, client
+from server.manage import db, token_auth, client, channel
 from server.utils.response_code import RET
 from server.api.models import TaskArgs
 from server.api import task_blue
 from server.utils.profile_analyze import profile
+from server.config import APP_ENV, config
 from datetime import timedelta
 from bson.objectid import ObjectId
 
@@ -71,10 +72,13 @@ def createTask():
 def saveTaskInfo():
     taskId = request.form.get('taskId')
     saveFlag = request.form.get('saveFlag')
+    platform = request.form.get('platform')
 
     if saveFlag=="True":
         # save object to mongodb 
         task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":time.time(), "state":"waiting"}})
+        print("ready to send to mq")
+        channel.basic_publish(exchange=config[APP_ENV].MQ_EXCHANGE, routing_key=platform, body=taskId)
     else :
         task_cl.delete_one({"_id":ObjectId(taskId)})
     

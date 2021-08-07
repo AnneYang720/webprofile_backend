@@ -5,6 +5,7 @@ from flask_httpauth import HTTPTokenAuth
 # from flask_jwt_extended import JWTManager
 from minio import Minio
 from server.config import APP_ENV, config
+import pika
 
 app = create_app()
 
@@ -27,6 +28,13 @@ token_auth = HTTPTokenAuth(scheme='Bearer')
 # 创建MongoDB数据库连接对象
 mongo_conn = MongoClient(host=config[APP_ENV].MONGO_HOST,port=config[APP_ENV].MONGO_PORT, username=config[APP_ENV].MONGO_USERNAME, password=config[APP_ENV].MONGO_PWD)
 db = mongo_conn[config[APP_ENV].MONGO_DATABASE] # Select the database
+
+#创建MQ连接
+credentials = pika.PlainCredentials('webprofile', 'webprofile')
+connection = pika.BlockingConnection(pika.ConnectionParameters(
+    host=config[APP_ENV].MQ_HOST, virtual_host='/', credentials=credentials, heartbeat=30))
+channel = connection.channel()
+channel.exchange_declare(exchange=config[APP_ENV].MQ_EXCHANGE, exchange_type='direct')
 
 if __name__ == "__main__":
     # print(app.url_map)
