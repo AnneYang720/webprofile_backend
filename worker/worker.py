@@ -58,6 +58,7 @@ def runTask(taskId):
             finalformdata = {"taskId":taskId,"state":"successed"}
             output = open('./profile.txt', 'r').read()
             print('load and run succeeded')
+            # TODO: stdout里的重要信息保留
         else:
             finalformdata = {"taskId":taskId,"state":"failed"}
             output = p.stderr #p.stdout
