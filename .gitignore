@@ -219,3 +219,5 @@ worker/model.mge
 server/config.py
 server/utils/profile.txt
 server/api/*.txt
+worker/log/
+worker/*.dot

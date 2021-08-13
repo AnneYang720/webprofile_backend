@@ -1,17 +1,24 @@
 import time
 from flask import g, jsonify, request
 import requests
+import tempfile
+import glob
+import os
 
 from server.manage import db, token_auth, client, channel
 from server.utils.response_code import RET
+from server.utils.network_visualize import visualize
 from server.api.models import TaskArgs
 from server.api import task_blue
 from server.utils.profile_analyze import profile
 from server.config import APP_ENV, config
 from datetime import timedelta
 from bson.objectid import ObjectId
+from minio.error import S3Error
 
 task_cl = db.tasks # select the collection
+
+#TODO: getversionlist
 
 # 新建项目
 @task_blue.route('/createurl', methods=['GET'])
@@ -137,8 +144,43 @@ def taskProfile():
     
     return jsonify(code=RET.OK, flag=True, message='打印信息成功',tot_dev_time=tot_dev_time,tot_host_time=tot_host_time,deviceList=deviceList,hostList=hostList)
 
+# 模型可视化
+@task_blue.route('/netvisualize/<taskId>', methods=['GET'])
+@token_auth.login_required
+def netVisualize(taskId):
+    # 对象存储路径
+    mge_key = "mge/"+ taskId
+    log_key = "log/"+ taskId
 
+    log_url = client.get_presigned_url(
+        method="GET",
+        bucket_name="minio-webprofile",
+        object_name=log_key,
+        expires=timedelta(days=1),
+        response_headers={"response-content-type": "application/octet-stream"},
+    )
 
+    try:
+        client.stat_object("minio-webprofile", log_key)
+        return jsonify(code=RET.OK, flag=True, message='获取log的url成功', data = log_url)
+
+    except S3Error as err:
+        pass
+
+    try:
+        with tempfile.NamedTemporaryFile() as mge_tf, tempfile.TemporaryDirectory() as log_td:
+            client.fget_object('minio-webprofile', mge_key, mge_tf.name)
+
+            visualize(mge_tf.name, log_td)
+
+            # TODO: 文件找不到
+            log_name = glob.glob(log_td+'/*.tfevents*')[0]
+            client.fput_object('minio-webprofile', log_key, log_name,
+                content_type='application/octet-stream')
+    except Exception as err:
+        return jsonify(code=RET.THIRDERR, flag=False, message=str(err))
+    
+    return jsonify(code=RET.OK, flag=True, message='获取log的url成功', data = log_url)
 
 # worker获取task文件的下载url
 @task_blue.route('/getdownloadurl/<taskId>', methods=['GET'])
