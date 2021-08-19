@@ -37,8 +37,10 @@ def create_app():
     # CORS(app, resources=r'/*')
 
     #注册 api 蓝图
-    from server.api import user_blue, task_blue
+    from server.api import user_blue, task_blue, worker_blue, admin_blue
     app.register_blueprint(user_blue)
     app.register_blueprint(task_blue, url_prefix='/task')
+    app.register_blueprint(worker_blue)
+    app.register_blueprint(admin_blue, url_prefix='/admin')
 
     return app

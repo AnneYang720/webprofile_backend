@@ -18,8 +18,6 @@ from minio.error import S3Error
 
 task_cl = db.tasks # select the collection
 
-#TODO: getversionlist
-
 # 新建项目
 @task_blue.route('/createurl', methods=['GET'])
 @token_auth.login_required

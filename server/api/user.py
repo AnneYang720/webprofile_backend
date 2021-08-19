@@ -7,6 +7,8 @@ from server.api import user_blue
 
 user_cl = db.users # select the collection
 
+# TODO 用户roles记录和token设置
+
 # 用户注册接口
 @user_blue.route('/signup', methods=['POST'])
 def signup():
@@ -19,7 +21,7 @@ def signup():
     if user_cl.find_one({"email": email}) is not None:
         return jsonify(re_code=RET.DATAEXIST, flag=False, message='用户已存在')
 
-    userId = user_cl.insert({"email":email,"password":User.generate_password(password)})
+    userId = user_cl.insert({"email":email,"password":User.generate_password(password), "workers":[], "roles":['user']})
     if userId:
         return jsonify(re_code=RET.OK, flag=True, message='注册成功')
     else:
@@ -57,11 +59,14 @@ def verify_token(token):
     if not user:
         return False
     g.user = user
-    return True
+    return user
+
+@token_auth.get_user_roles
+def get_user_roles(user):
+    return user['roles']
+
+
 
 @token_auth.error_handler
 def tokenUnauthorized():
-    return jsonify(code=RET.SESSIONERR, flag=False, message='登录过期')
-
-
-# TODO:前端设置token
+    return jsonify(code=RET.USERERR, flag=False, message='登录错误')
