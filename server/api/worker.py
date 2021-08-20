@@ -41,15 +41,17 @@ def newWorker():
 @worker_blue.route('/getmyworkerslist', methods=['GET'])
 @token_auth.login_required
 def getmyworkerslist():
-    pub_workers = list(worker_cl.find({"auth":"public"},{"name": 1}))
+    my_workers = list(worker_cl.find({"auth":"public"}))
+
     # get userid
     userId = g.user['_id']
     pri_workers = list(user_cl.find({"_id":userId},{"workers":1}))[0]['workers']
 
-    my_workers = []
-    for worker in pub_workers:
-        my_workers.append(worker['name'])
-    my_workers.extend(pri_workers)
+    for worker in pri_workers:
+        my_workers.extend(list(worker_cl.find({"name":worker})))
+    
+    for worker in my_workers:
+        worker["_id"] = str(worker["_id"])
 
     return jsonify(code=RET.OK, flag=True, message='获取当前用户的workersList成功', data=my_workers)
 
