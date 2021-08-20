@@ -9,7 +9,6 @@ task_cl = db.tasks
 worker_cl = db.workers 
 user_cl = db.users
 
-#TODO: getversionlist
 
 # 新worker注册
 @worker_blue.route('/worker/add', methods=['POST'])
@@ -19,6 +18,10 @@ def newWorker():
     platform = request.form.get('platform')
     mge_version = request.form.get('mge_version')
     auth = request.form.get('auth')
+
+    if worker_cl.find_one({"name": name}) is not None:
+        return jsonify(re_code=RET.DATAEXIST, flag=False, message='worker命名重复')
+
 
     # save info into mongodb & create taskid
     workerId = worker_cl.insert({

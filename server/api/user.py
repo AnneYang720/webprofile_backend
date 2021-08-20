@@ -7,8 +7,6 @@ from server.api import user_blue
 
 user_cl = db.users # select the collection
 
-# TODO 用户roles记录和token设置
-
 # 用户注册接口
 @user_blue.route('/signup', methods=['POST'])
 def signup():
