@@ -221,3 +221,4 @@ server/utils/profile.txt
 server/api/*.txt
 worker/log/
 worker/*.dot
+worker/config.py

@@ -15,6 +15,7 @@ from server.config import APP_ENV, config
 from datetime import timedelta
 from bson.objectid import ObjectId
 from minio.error import S3Error
+import json
 
 task_cl = db.tasks # select the collection
 
@@ -22,7 +23,7 @@ task_cl = db.tasks # select the collection
 @task_blue.route('/createurl', methods=['GET'])
 @token_auth.login_required
 def createTask():
-    platform = request.form.get('platform')
+    worker = request.form.get('worker')
     version = request.form.get('version')
     mge_name = request.form.get('mge_name')
     data_name = request.form.get('data_name')
@@ -37,9 +38,9 @@ def createTask():
         "data_name":data_name,
         "mge_key":None,
         "data_key":None,
-        "platform":platform,
+        "worker":worker,
         "version":version,
-        "updateTime":time.time(),
+        "updateTime":int(time.time()),
         "state":"initiated",
         "output_key":None
     })
@@ -77,13 +78,14 @@ def createTask():
 def saveTaskInfo():
     taskId = request.form.get('taskId')
     saveFlag = request.form.get('saveFlag')
-    platform = request.form.get('platform')
+    worker = request.form.get('worker')
+    version = request.form.get('version')
 
     if saveFlag=="True":
         # save object to mongodb 
-        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":time.time(), "state":"waiting"}})
+        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()), "state":"waiting"}})
         print("ready to send to mq")
-        channel.basic_publish(exchange=config[APP_ENV].MQ_EXCHANGE, routing_key=platform, body=taskId)
+        channel.basic_publish(exchange=config[APP_ENV].MQ_EXCHANGE, routing_key=worker, body=json.dumps({'taskId':taskId,'version':version}))
     else :
         task_cl.delete_one({"_id":ObjectId(taskId)})
     
@@ -97,7 +99,7 @@ def getTasksList(page,size):
     page -= 1 # skip page
     userId = g.user['_id'] # get userid
     total = task_cl.find({"userId":userId}).count()
-    data = task_cl.find({"userId":userId},{ "_id": 1, "mge_name": 1, "data_name": 1, "platform": 1, "updateTime": 1, "version": 1, "state": 1 }).skip(page*size).limit(size)
+    data = task_cl.find({"userId":userId},{ "_id": 1, "mge_name": 1, "data_name": 1, "worker": 1, "updateTime": 1, "version": 1, "state": 1 }).skip(page*size).limit(size)
     docs = list(data)
     for doc in docs:
         doc["_id"] = str(doc["_id"])
@@ -213,7 +215,7 @@ def saveWorkerTaskInfo():
 
     # 如果任务开始运行，更新状态并返回
     if state == "running":
-        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":time.time(), "state":state}})
+        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()), "state":state}})
         return jsonify(code=RET.OK, flag=True, message='任务状态更新成功')
 
     # 任务完成（成功or失败）
@@ -227,6 +229,6 @@ def saveWorkerTaskInfo():
         response_headers={"response-content-type": "application/json"},
     )
     
-    task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":time.time(), "state":state,"output_key":output_key}})
+    task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()), "state":state,"output_key":output_key}})
 
     return jsonify(code=RET.OK, flag=True, message='任务状态更新成功',output_url=output_url)

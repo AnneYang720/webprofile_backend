@@ -1,30 +1,34 @@
+from logging import error
 import requests
 import shlex
 import subprocess
 import pika
+import os
+import json
+from config import Config
+from apscheduler.schedulers.background import BackgroundScheduler
 
-EXCHANGE = 'meg_tasks'
-PLATFORM = 'arm'
-BASEURL = 'http://localhost:5000'
 
 credentials = pika.PlainCredentials('webprofile', 'webprofile')
 connection = pika.BlockingConnection(pika.ConnectionParameters(
     host='localhost', virtual_host='/', credentials=credentials))
 channel = connection.channel()
 
-channel.queue_declare(queue=PLATFORM, durable=True)
+channel.queue_declare(queue=Config.NAME, durable=True)
+channel.queue_bind(exchange=Config.EXCHANGE, queue=Config.NAME)
 
-channel.queue_bind(exchange=EXCHANGE, queue=PLATFORM, routing_key=PLATFORM)
 
 def callback(ch, method, properties, body):
-    print(" [x] Received %r" % body.decode())
-    runTask(body.decode())
+    body = json.loads(body.decode())
+    print(" [x] Received %r" % body)
+    runTask(body['taskId'],body['version'])
     print(" [x] Done")
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-def runTask(taskId): 
-    r_geturl = requests.get(BASEURL+'/task/getdownloadurl/'+str(taskId),headers={'content-type':'application/json'})
+# TODO 区分版本
+def runTask(taskId,version): 
+    r_geturl = requests.get(Config.BASEURL+'/task/getdownloadurl/'+str(taskId),headers={'content-type':'application/json'})
 
     result = r_geturl.json()
 
@@ -46,13 +50,27 @@ def runTask(taskId):
 
     # 更新状态至running
     formdata = {"taskId":taskId,"state":"running"}
-    r_update = requests.post(BASEURL+'/task/updatestate',data = formdata)
+    r_update = requests.post(Config.BASEURL+'/task/updatestate',data = formdata)
 
 
     # 运行load and run
     try:
-        cmd = shlex.split('load_and_run model.mge --input data:resnet.npy --profile profile.txt --cpu')
-        p = subprocess.run(cmd, capture_output=True)
+        mge_ver = {}
+        for v in Config.VERS:
+            if v['version'] == version:
+                mge_ver = v
+                break
+        else:
+            raise Exception('unknown version ' + version)
+
+        exec_path = os.path.join(mge_ver['path'], 'bin/load_and_run')
+        lib_path = os.path.join(mge_ver['path'], 'lib')
+        # TODO: 判断存在性
+        env = os.environ.copy()
+        env['LD_LIBRARY_PATH'] = lib_path + ':' + (env['LD_LIBRARY_PATH'] if 'LD_LIBRARY_PATH' in env else '')
+
+        cmd = shlex.split(exec_path + ' model.mge --input data:resnet.npy --profile profile.txt ' + mge_ver['args'])
+        p = subprocess.run(cmd, capture_output=True, env=env)
         
         if p.returncode == 0:
             finalformdata = {"taskId":taskId,"state":"successed"}
@@ -63,15 +81,44 @@ def runTask(taskId):
             finalformdata = {"taskId":taskId,"state":"failed"}
             output = p.stderr #p.stdout
             print('load and run has error')
-    except:
-        print("load-and-run failed")
+            print(output)
 
-    r_updatestate = requests.post(BASEURL+'/task/updatestate',data = finalformdata)
+    except Exception as e:
+        print("load-and-run failed")
+        print(e)
+
+    r_updatestate = requests.post(Config.BASEURL+'/task/updatestate',data = finalformdata)
     result = r_updatestate.json()
     r_uploadoutput = requests.put(result['output_url'],data=output)
 
 
+# worker注册函数
+def workerLogin():
+    # 注册worker
+    mge_version = [i['version'] for i in Config.VERS]
+    formdata = {"name":Config.NAME,"ip":Config.IP,"platform":Config.PLATFORM,"mge_version":mge_version,"auth":Config.AUTH}
+    r_login = requests.post(Config.BASEURL+'/worker/add',data = formdata)
+    Config.ID = r_login.json()['data']
+    print(Config.ID)
+
+
+# worker更新函数
+def workerHeartbeat():
+    formdata = {"id":Config.ID}
+    r_update = requests.post(Config.BASEURL+'/worker/update',data = formdata)
+    print(r_update.json()['message'])
+
+
+# worker注册（上线）
+workerLogin()
+
+
+# 定时更新状态
+scheduler = BackgroundScheduler()
+scheduler.start()
+scheduler.add_job(workerHeartbeat, trigger='cron', second='*/59') # 每10秒运行一次
+
 channel.basic_qos(prefetch_count=1)
-channel.basic_consume(queue=PLATFORM, on_message_callback=callback)
+channel.basic_consume(queue=Config.NAME, on_message_callback=callback)
 
 channel.start_consuming()

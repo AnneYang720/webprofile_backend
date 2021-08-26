@@ -32,7 +32,7 @@ db = mongo_conn[config[APP_ENV].MONGO_DATABASE] # Select the database
 #创建MQ连接
 credentials = pika.PlainCredentials('webprofile', 'webprofile')
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-    host=config[APP_ENV].MQ_HOST, virtual_host='/', credentials=credentials, heartbeat=30))
+    host=config[APP_ENV].MQ_HOST, virtual_host='/', credentials=credentials, heartbeat=0))
 channel = connection.channel()
 channel.exchange_declare(exchange=config[APP_ENV].MQ_EXCHANGE, exchange_type='direct')
 

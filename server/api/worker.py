@@ -3,6 +3,8 @@ from flask import g, jsonify, request
 from server.manage import db, token_auth
 from server.utils.response_code import RET
 from server.api import worker_blue
+from bson.objectid import ObjectId
+import time
 
 # select collections
 task_cl = db.tasks
@@ -16,25 +18,35 @@ def newWorker():
     name = request.form.get('name')
     ip = request.form.get('ip')
     platform = request.form.get('platform')
-    mge_version = request.form.get('mge_version')
+    mge_version = request.form.getlist('mge_version')
     auth = request.form.get('auth')
 
-    if worker_cl.find_one({"name": name}) is not None:
-        return jsonify(re_code=RET.DATAEXIST, flag=False, message='worker命名重复')
+    worker = worker_cl.find_one({"name": name})
+    if worker is not None: #更新worker信息
+        worker_cl.update({"name":name},{"$set":{"ip":ip,"platform":platform,"mge_version":mge_version,"auth":auth}})
+        return jsonify(re_code=RET.DATAEXIST, flag=False, message='worker命名重复', data=str(worker["_id"]))
 
 
-    # save info into mongodb & create taskid
+    # save info into mongodb & create workerid
     workerId = worker_cl.insert({
         "name":name,
         "ip":ip,
         "platform":platform,
         "mge_version":mge_version,
-        "platform":platform,
         "auth":auth,
-        "state":"Initiated"
+        "updateTime":time.time(),
     })
     
     return jsonify(code=RET.OK, flag=True, message='新worker注册成功', data=str(workerId))
+
+
+# worker更新
+@worker_blue.route('/worker/update', methods=['POST'])
+def workerUpdate():
+    workerId = request.form.get('id')
+    state = request.form.get('state')
+    worker_cl.update({"_id":ObjectId(workerId)},{"$set":{"state":state,"updateTime":time.time()}})
+    return jsonify(code=RET.OK, flag=True, message='worker状态更新成功')
 
 
 # 用户获取所有可用的worker列表
