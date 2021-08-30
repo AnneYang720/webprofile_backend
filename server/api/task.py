@@ -182,6 +182,25 @@ def netVisualize(taskId):
     
     return jsonify(code=RET.OK, flag=True, message='获取log的url成功', data = log_url)
 
+
+# 任务失败信息
+@task_blue.route('/getfailinfo/<taskId>', methods=['GET'])
+@token_auth.login_required
+def getFailInfoUrl(taskId):
+    # 对象存储路径
+    output_key = "output/"+ taskId
+    filename = "output_fail_"+taskId
+    output_url = client.get_presigned_url(
+        method="GET",
+        bucket_name="minio-webprofile",
+        object_name=output_key,
+        expires=timedelta(days=1),
+        response_headers={"response-content-disposition": "attachment; filename="+filename},
+    )
+
+    return jsonify(code=RET.OK, flag=True, message='获取结果的url成功', data = output_url)
+
+
 # worker获取task文件的下载url
 @task_blue.route('/getdownloadurl/<taskId>', methods=['GET'])
 def getTasksUrl(taskId):
