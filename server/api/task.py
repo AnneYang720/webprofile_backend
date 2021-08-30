@@ -195,7 +195,7 @@ def getFailInfoUrl(taskId):
         bucket_name="minio-webprofile",
         object_name=output_key,
         expires=timedelta(days=1),
-        response_headers={"response-content-disposition": "attachment; filename="+filename},
+        response_headers={"response-content-disposition": f'attachment; filename={filename}'},
     )
 
     return jsonify(code=RET.OK, flag=True, message='获取结果的url成功', data = output_url)
