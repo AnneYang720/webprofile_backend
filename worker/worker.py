@@ -21,14 +21,14 @@ channel.queue_bind(exchange=Config.EXCHANGE, queue=Config.NAME)
 def callback(ch, method, properties, body):
     body = json.loads(body.decode())
     print(" [x] Received %r" % body)
-    runTask(body['taskId'],body['version'])
+    runTask(body['taskId'],body['version'],body['args'])
     print(" [x] Done")
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 # TODO 区分版本
 # TODO MQ runtask失败
-def runTask(taskId,version): 
+def runTask(taskId,version,args): 
     r_geturl = requests.get(Config.BASEURL+'/task/getdownloadurl/'+str(taskId),headers={'content-type':'application/json'})
 
     result = r_geturl.json()
@@ -70,11 +70,12 @@ def runTask(taskId,version):
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = lib_path + ':' + (env['LD_LIBRARY_PATH'] if 'LD_LIBRARY_PATH' in env else '')
 
-        cmd = shlex.split(exec_path + ' model.mge --input data:resnet.npy --profile profile.txt ' + mge_ver['args'])
+        cmd = shlex.split(exec_path + ' model.mge --input data:resnet.npy --profile profile.txt ' + args)
+        print(cmd)
         p = subprocess.run(cmd, capture_output=True, env=env)
         
         if p.returncode == 0:
-            finalformdata = {"taskId":taskId,"state":"successed"}
+            finalformdata = {"taskId":taskId,"state":"succeeded"}
             output = open('./profile.txt', 'r').read()
             print('load and run succeeded')
             # TODO: stdout里的重要信息保留
