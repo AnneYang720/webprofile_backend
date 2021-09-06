@@ -65,17 +65,17 @@ class TaskArgs():
     def __init__(self, form):
         self.taskId = form.get('taskId')
         self.top = 3 if form.get('top')=="" else form.get('top')
-        self.type = None if form.get('type')=="[]" else json.loads(form.get('type'))
+        self.type = None if form.get('type')==[] else form.get('type')
         self.aggregateBy = None if form.get('aggregateBy')=="" else form.get('aggregateBy')
         self.oprName = None if form.get('oprName')=="" else form.get('oprName')
         self.inputDtype = None if form.get('inputDtype')=="" else form.get('inputDtype')
         self.topEndKey = "end" if form.get('topEndKey')=="" else form.get('topEndKey')
         self.aggregate = None if form.get('aggregate')=="" else form.get('aggregate')
         self.orderBy = "time" if form.get('orderBy')=="" else form.get('orderBy')
-        self.copyTime = False if form.get('copyTime')=="false" else True
-        self.minTime = float("-inf") if form.get('minTime')=="" else form.get('minTime')
-        self.maxTime = float("inf") if form.get('maxTime')=="" else form.get('maxTime')
-        self.showHost = False if form.get('showHost')=="false" else True
+        self.copyTime = False if form.get('copyTime')==False else True
+        self.minTime = float("-inf") if form.get('minTime')=="" else float(form.get('minTime'))
+        self.maxTime = float("inf") if form.get('maxTime')=="" else float(form.get('maxTime'))
+        self.showHost = False if form.get('showHost')==False else True
         self.profilePath = None
 
     
