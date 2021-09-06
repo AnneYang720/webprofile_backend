@@ -1,9 +1,10 @@
-from flask import g, current_app, jsonify, request,make_response
+from flask import g, current_app, jsonify, request
 
 from server.manage import db, token_auth
 from server.api.models import User
 from server.utils.response_code import RET
 from server.api import user_blue
+from bson.objectid import ObjectId
 
 user_cl = db.users # select the collection
 
@@ -17,11 +18,11 @@ def signup():
         return jsonify(code=RET.PARAMERR, flag=False, message='参数不完整')
 
     if user_cl.find_one({"email": email}) is not None:
-        return jsonify(re_code=RET.DATAEXIST, flag=False, message='用户已存在')
+        return jsonify(code=RET.DATAEXIST, flag=False, message='用户已存在')
 
     userId = user_cl.insert({"email":email,"password":User.generate_password(password), "workers":[], "roles":['user']})
     if userId:
-        return jsonify(re_code=RET.OK, flag=True, message='注册成功')
+        return jsonify(code=RET.OK, flag=True, message='注册成功')
     else:
         return jsonify(code=RET.SERVERERR, flag=False, message='Internal Error')
 
@@ -49,6 +50,15 @@ def login():
     #更新最后一次登录时间
     token = User.generate_user_token(user['_id'])
     return jsonify(code=RET.OK, flag=True, message='登录成功', token=token)
+
+# 获取用户信息
+@user_blue.route('/user/info', methods=['GET'])
+@token_auth.login_required
+def getInfo():
+    # get userid
+    userId = g.user['_id']
+    data = user_cl.find({"_id":ObjectId(userId)},{"_id": 1, "email": 1, "roles": 1})[0]
+    return jsonify(code=RET.OK, flag=True, message='获取用户信息成功', data={"id":str(data["_id"]),"roles":data["roles"],"email":data["email"]})
 
 
 @token_auth.verify_token

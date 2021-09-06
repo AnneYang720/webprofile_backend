@@ -20,7 +20,7 @@ import json
 task_cl = db.tasks # select the collection
 
 # 新建项目
-@task_blue.route('/createurl', methods=['GET'])
+@task_blue.route('/createurl', methods=['POST'])
 @token_auth.login_required
 def createTask():
     worker = request.form.get('worker')
@@ -40,7 +40,7 @@ def createTask():
         "data_key":None,
         "worker":worker,
         "version":version,
-        "updateTime":int(time.time()),
+        "updateTime":int(time.time()*1000),
         "state":"initiated",
         "output_key":None
     })
@@ -80,12 +80,13 @@ def saveTaskInfo():
     saveFlag = request.form.get('saveFlag')
     worker = request.form.get('worker')
     version = request.form.get('version')
+    args = request.form.get('args')
 
-    if saveFlag=="True":
+    if saveFlag=="true":
         # save object to mongodb 
-        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()), "state":"waiting"}})
+        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()*1000), "state":"waiting"}})
         print("ready to send to mq")
-        channel.basic_publish(exchange=config[APP_ENV].MQ_EXCHANGE, routing_key=worker, body=json.dumps({'taskId':taskId,'version':version}))
+        channel.basic_publish(exchange=config[APP_ENV].MQ_EXCHANGE, routing_key=worker, body=json.dumps({'taskId':taskId,'version':version,'args':args}))
     else :
         task_cl.delete_one({"_id":ObjectId(taskId)})
     
@@ -122,7 +123,7 @@ def getTasksID():
 @task_blue.route('/taskprofile', methods=['POST'])
 @token_auth.login_required
 def taskProfile():
-    taskArgs = TaskArgs(request.form)
+    taskArgs = TaskArgs(request.json)
 
     # download profile.txt from minio
     output_key = "output/"+ taskArgs.taskId
@@ -140,7 +141,6 @@ def taskProfile():
     taskArgs.setProfilePath("/data/evangelineyang/mgedemo/backend/server/api/profile_"+taskArgs.taskId+".txt")
 
     tot_dev_time,tot_host_time,deviceList,hostList = profile(taskArgs)
-
     
     return jsonify(code=RET.OK, flag=True, message='打印信息成功',tot_dev_time=tot_dev_time,tot_host_time=tot_host_time,deviceList=deviceList,hostList=hostList)
 
@@ -234,7 +234,7 @@ def saveWorkerTaskInfo():
 
     # 如果任务开始运行，更新状态并返回
     if state == "running":
-        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()), "state":state}})
+        task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()*1000), "state":state}})
         return jsonify(code=RET.OK, flag=True, message='任务状态更新成功')
 
     # 任务完成（成功or失败）
@@ -248,6 +248,6 @@ def saveWorkerTaskInfo():
         response_headers={"response-content-type": "application/json"},
     )
     
-    task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()), "state":state,"output_key":output_key}})
+    task_cl.update({"_id":ObjectId(taskId)},{"$set":{"updateTime":int(time.time()*1000), "state":state,"output_key":output_key}})
 
     return jsonify(code=RET.OK, flag=True, message='任务状态更新成功',output_url=output_url)

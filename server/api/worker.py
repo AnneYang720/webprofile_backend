@@ -34,7 +34,7 @@ def newWorker():
         "platform":platform,
         "mge_version":mge_version,
         "auth":auth,
-        "updateTime":time.time(),
+        "updateTime":int(time.time()*1000),
     })
     
     return jsonify(code=RET.OK, flag=True, message='新worker注册成功', data=str(workerId))
@@ -45,7 +45,7 @@ def newWorker():
 def workerUpdate():
     workerId = request.form.get('id')
     state = request.form.get('state')
-    worker_cl.update({"_id":ObjectId(workerId)},{"$set":{"state":state,"updateTime":time.time()}})
+    worker_cl.update({"_id":ObjectId(workerId)},{"$set":{"state":state,"updateTime":int(time.time()*1000)}})
     return jsonify(code=RET.OK, flag=True, message='worker状态更新成功')
 
 
