@@ -2,7 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 from flask import Flask, request
-# from flask_cors import CORS
+from flask_cors import *
 from server.config import APP_ENV, config  
 
 
@@ -28,6 +28,7 @@ def create_app():
     setupLogging(config[APP_ENV].LOGGING_LEVEL)
 
     app = Flask(__name__)
+    # CORS(app, supports_credentials=True)
     app.config.from_object(config[APP_ENV])
 
     # @app.route('/')
@@ -43,4 +44,6 @@ def create_app():
     app.register_blueprint(worker_blue)
     app.register_blueprint(admin_blue, url_prefix='/admin')
 
+    CORS(app, resources=r'/*')
+    
     return app
