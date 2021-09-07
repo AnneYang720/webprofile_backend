@@ -174,10 +174,10 @@ def visualize(model_path,log_path,bar_length_max: int = 20):
                 )
             )
     # summary
-    extra_info = {
-        "#ops": len(graph.all_oprs),
-        "#params": len(params_list),
-    }
+    # extra_info = {
+    #     "#ops": len(graph.all_oprs),
+    #     "#params": len(params_list),
+    # }
 
     (
         total_flops,
@@ -191,14 +191,14 @@ def visualize(model_path,log_path,bar_length_max: int = 20):
     total_param_dims, total_param_size, params_list = sum_param_stats(
         params_list, bar_length_max
     )
-    extra_info["total_param_dims"] = sizeof_fmt(total_param_dims, suffix="")
-    extra_info["total_param_size"] = sizeof_fmt(total_param_size)
+    # extra_info["total_param_dims"] = sizeof_fmt(total_param_dims, suffix="")
+    # extra_info["total_param_size"] = sizeof_fmt(total_param_size)
     # if logging_to_stdout:
     #     print_param_stats(params_list)
 
     # if cal_flops:
     total_flops, flops_list = sum_op_stats(flops_list, bar_length_max)
-    extra_info["total_flops"] = sizeof_fmt(total_flops, suffix="OPs")
+    # extra_info["total_flops"] = sizeof_fmt(total_flops, suffix="OPs")
     # if logging_to_stdout:
     #     print_op_stats(flops_list)
 
@@ -206,15 +206,15 @@ def visualize(model_path,log_path,bar_length_max: int = 20):
     total_act_dims, total_act_size, activations_list = sum_activations_stats(
         activations_list, bar_length_max
     )
-    extra_info["total_act_dims"] = sizeof_fmt(total_act_dims, suffix="")
-    extra_info["total_act_size"] = sizeof_fmt(total_act_size)
+    # extra_info["total_act_dims"] = sizeof_fmt(total_act_dims, suffix="")
+    # extra_info["total_act_size"] = sizeof_fmt(total_act_size)
     # if logging_to_stdout:
     #     print_activations_stats(activations_list, has_input=has_input)
 
     # if cal_flops and cal_params:
-    extra_info["flops/param_size"] = "{:3.3f}".format(
-        total_flops / total_param_size
-    )
+    # extra_info["flops/param_size"] = "{:3.3f}".format(
+    #     total_flops / total_param_size
+    # )
 
     if log_path:
         graph_def = GraphDef(node=node_list, versions=VersionDef(producer=22))

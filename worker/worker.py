@@ -5,6 +5,7 @@ import subprocess
 import pika
 import os
 import json
+import zipfile
 from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -45,9 +46,20 @@ def runTask(taskId,version,args):
     mge.close()
 
     r_download_data = requests.get(data_url)
-    with open("./data.npy", "wb") as data:
+    with open("./data.zip", "wb") as data:
         data.write(r_download_data.content)
+    zip_file = zipfile.ZipFile("./data.zip")
+    zip_file.extractall()
     data.close()
+    data_str = ''
+    for name in zip_file.namelist():
+        data_str += f"{name.split('.')[0]}:{name};"
+    
+    data_str = data_str[:-1]
+    
+    print(data_str)
+    zip_file.close()
+
 
     # 更新状态至running
     formdata = {"taskId":taskId,"state":"running"}
@@ -70,7 +82,7 @@ def runTask(taskId,version,args):
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = lib_path + ':' + (env['LD_LIBRARY_PATH'] if 'LD_LIBRARY_PATH' in env else '')
 
-        cmd = shlex.split(exec_path + ' model.mge --input data:resnet.npy --profile profile.txt ' + args)
+        cmd = shlex.split(exec_path + ' model.mge --input '+ data_str + ' --profile profile.txt ' + args)
         print(cmd)
         p = subprocess.run(cmd, capture_output=True, env=env)
         

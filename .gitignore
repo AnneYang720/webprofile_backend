@@ -222,3 +222,4 @@ server/api/*.txt
 worker/log/
 worker/*.dot
 worker/config.py
+worker/*.zip
