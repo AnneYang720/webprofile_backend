@@ -1,0 +1,1011 @@
+openapi: 3.0.1
+info:
+  title: Web Profile工具API
+  description: web profile工具基础API
+  version: 1.0.0
+servers:
+- url: https://localhost:5000/
+- url: http://localhost:5000/
+
+
+tags:
+- name: user
+  description: User Operations
+- name: task
+  description: Upload MGE Model & Show Results
+- name: worker
+  description: worker信息管理
+- name: admin
+  description: 管理员功能
+  
+  
+paths:
+  /signup:
+    post:
+      tags:
+      - user
+      summary: User registration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        200:
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      x-codegen-request-body-name: body
+  /login:
+    post:
+      tags: 
+        - user
+      summary: 登录成功
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+  /user/info:
+    get:
+      tags:
+        - user
+      security:
+        - bearerAuth: []
+      summary: Get info of current user after login
+      responses:
+        200:
+          description: 获取用户信息成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+  /task/createurl:
+    post:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: 新建项目，返回文件上传至MINIO的预签名url
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - worker
+              - version
+              - mge_name
+              - data_name
+              properties:
+                worker:
+                  type: string
+                  description: 选中worker的名字
+                version:
+                  type: string
+                  description: 选中的MgeEngine版本
+                mge_name:
+                  type: string
+                  description: 上传的MGE Model的文件名
+                data_name:
+                  type: string
+                  description: 上传的data的文件名
+        required: true
+      responses:
+        200:
+          description: 用户创建任务后，生成上传MGE模型和数据文件至MINIO的url成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTaskResponse'
+  /task/savetaskinfo:
+    post:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: mge、data文件上传成功，更新数据库中任务状态
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - worker
+              - version
+              - taskId
+              - saveFlag
+              - args
+              properties:
+                worker:
+                  type: string
+                  description: 选中worker的名字
+                version:
+                  type: string
+                  description: 选中的MgeEngine版本
+                taskId:
+                  type: string
+                  description: 该任务ID
+                saveFlag:
+                  type: string
+                  description: 文件是否上传成功
+                args:
+                  type: string
+                  description: 运行load_and_run的额外命令行参数
+        required: true
+      responses:
+        200:
+          description: 创建任务后，文件上传成功，任务成功初始化
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /task/getlist/{page}/{size}:
+    get:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: 获取当前用户的所有task信息
+      parameters:
+      - name: page
+        in: path
+        description: 第几页
+        required: true
+        schema:
+          type: string
+      - name: size
+        in: path
+        description: 每页显示几条
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: 获取所有任务信息成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+  /task/getidlist:
+    get:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: 获取当前用户的所有task ID
+      responses:
+        200:
+          description: 获取所有任务ID成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskIDResponse'
+  /task/taskprofile:
+    post:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: 获得任务Profile
+      requestBody:
+        content:
+          application/json:
+              schema:
+                $ref: '#/components/schemas/GetProfile'
+        required: true
+      responses:
+        200:
+          description: 获得任务Profile信息成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+  /task/netvisualize/{taskId}:
+    get:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: 模型可视化
+      parameters:
+      - name: taskId
+        in: path
+        description: 任务ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: 模型可视化时，获取log的url成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  flag:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: string
+                    description: 获取MINIO上log文件的预签名url
+  /task/getfailinfo/{taskId}:
+    get:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: 任务失败信息
+      parameters:
+      - name: taskId
+        in: path
+        description: 任务ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: 任务失败，获取失败结果的url成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  flag:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: string
+                    description: 获取MINIO上output文件的预签名url
+  /task/getdownloadurl/{taskId}:
+    get:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: worker获取task文件的下载url
+      parameters:
+      - name: taskId
+        in: path
+        description: 任务ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: worker获取文件，生成文件下载url成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  flag:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      dataUrl:
+                        type: string
+                      mgeUrl:
+                        type: string
+  /task/updatestate:
+    post:
+      tags:
+        - task
+      security:
+        - bearerAuth: []
+      summary: worker上任务运行/完成/失败，更新数据库中任务状态
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                taskID:
+                  type: string
+                state:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: 任务状态更新成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  flag:
+                    type: boolean
+                  message:
+                    type: string
+                  output_url:
+                    type: string
+                    description: 返回给worker的，上传结果文件至MINIO的预签名url
+  /worker/add:
+    post:
+      tags: 
+        - worker
+      summary: 新worker注册
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                name:
+                  type: string
+                  description: worker名称
+                ip:
+                  type: string
+                  description: worker ip
+                platform:
+                  type: string
+                  description: worker平台架构
+                mge_version:
+                  type: array
+                  items: 
+                    type: string
+                  description: worker上有的MegEngine Version
+                auth:
+                  type: string
+                  description: worker是public/private
+        required: true
+      responses:
+        200:
+          description: 新worker注册成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  flag:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: string
+                    description: 注册成功，新worker的ID
+  /worker/update:
+    post:
+      tags:
+        - worker
+      summary: worker心跳更新
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                id:
+                  type: string
+                state:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: worker心跳状态更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /getmyworkerslist:
+    get:
+      tags:
+        - worker
+      security:
+        - bearerAuth: []
+      summary: 用户获取所有可用的worker列表
+      responses:
+        200:
+          description: 获取当前用户的workersList成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerList'
+  /getworkinfo/{chosenWorker}:
+    get:
+      tags:
+        - worker
+      security:
+        - bearerAuth: []
+      summary: worker获取task文件的下载url
+      parameters:
+      - name: chosenWorker
+        in: path
+        description: 选中worker名称
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: 获取当前选中worker的信息成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  flag:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      platform:
+                        type: string
+                      mge_version:
+                        type: array
+                        items: 
+                          type: string
+  /admin/getworkerslist:
+    get:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 管理员获取所有worker的信息
+      responses:
+        200:
+          description: 获取所有worker信息成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerList'
+  /admin/getuserslist:
+    get:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 管理员获取所有用户的信息
+      responses:
+        200:
+          description: 获取所有用户信息成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersList'
+  /admin/getprivateworkerslist:
+    get:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 管理员获取所有私有设备的信息
+      responses:
+        200:
+          description: 获取所有私有worker信息成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                  flag:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items : 
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+  /admin/worker/{userId}:
+    post:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 给某用户添加某私有worker
+      parameters:
+      - name: userId
+        in: path
+        description: 用户ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                worker_add:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: 添加worker成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 删除某用户的某私有worker使用权
+      parameters:
+      - name: userId
+        in: path
+        description: 用户ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                worker_del:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: 删除worker成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/add:
+    post:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 添加某用户为管理员
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                admin_add:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: 添加管理员成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/del:
+    delete:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 删除某用户管理员权限
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                admin_del:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: 删除管理员成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/changepwd:
+    post:
+      tags:
+        - admin
+      security:
+        - bearerAuth: []
+      summary: 管理员修改用户密码
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: 修改密码成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'                  
+                          
+                          
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          description: 邮箱
+        password:
+          type: string
+          description: 密码
+    
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+    
+    LoginResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        token:
+          type: string
+            
+    UserInfoResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            roles:
+              type: array
+              items: 
+                type: string
+            email:
+              type: string
+    
+    CreateTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            taskId:
+              type: string
+            dataUrl:
+              type: string
+            mgeUrl:
+              type: string
+              
+    Task:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Task ID
+        data_name:
+          type: string
+          description: 数据文件名
+        mge_name:
+          type: string
+          description: MGE Model文件名
+        state:
+          type: string
+          description: 任务当前状态
+        updateTime:
+          type: integer
+          description: timestamp, 任务上次更新时间
+        version:
+          type: string
+          description: 所选MgeEngine版本
+        worker:
+          type: string
+          description: 所选worker
+    
+    TaskList:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: 该用户所有任务条数
+            rows:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+    
+    TaskIDResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items: 
+            type: string
+    
+    GetProfile:
+      type: object
+      properties:
+        taskId:
+          type: string
+        aggregate:
+          type: string
+        aggregateBy:
+          type: string
+        copyTime:
+          type: boolean
+        inputDtype:
+          type: string
+        maxTime:
+          type: string
+        minTime:
+          type: string
+        oprName:
+          type: string
+        orderBy:
+          type: string
+        showHost:
+          type: boolean
+        top:
+          type: string
+        topEndKey:
+          type: string
+        type:
+          type: array
+          items: 
+            type: string
+    
+    ProfileResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        tot_dev_time:
+          type: number
+          format: float
+        tot_host_time:
+          type: number
+          format: float
+        deviceList:
+          type: array
+          items:
+                $ref: '#/components/schemas/DeviceProfile'
+        hostList:
+          type: array
+          items:
+                $ref: '#/components/schemas/HostProfile'
+    
+    DeviceProfile:
+      type: object
+      properties:
+        deviceSelfTime:
+          type: string
+          description: 算子在计算设备上（例如 GPU ）的运行时间
+        cumulative:
+          type: string
+          description: 累加前面所有算子的时间
+        operatorInfo:
+          type: string
+          description: 打印算子的基本信息
+        computation:
+          type: string
+          description: 算子需要的浮点数操作数目
+        FLOPS:
+          type: string
+          description: 算子每秒执行的浮点操作数目，由 computation 除以 device self time 并转换单位得到
+        memory:
+          type: string
+          description: 算子使用的存储（例如 GPU 显存）大小
+        bandwidth:
+          type: string
+          description: 算子的带宽，由 memory 除以 device self time 并转换单位得到
+        in_shapes:
+          type: string
+          description: 算子输入张量的形状
+        out_shapes:
+          type: string
+          description: 算子输出张量的形状
+    
+    HostProfile:
+      type: object
+      properties:
+        hostSelfTime:
+          type: string
+          description: 算子在计算设备上（例如 GPU ）的运行时间
+        cumulative:
+          type: string
+          description: 累加前面所有算子的时间
+        operatorInfo:
+          type: string
+          description: 打印算子的基本信息
+        computation:
+          type: string
+          description: 算子需要的浮点数操作数目
+        FLOPS:
+          type: string
+          description: 算子每秒执行的浮点操作数目，由 computation 除以 device self time 并转换单位得到
+        memory:
+          type: string
+          description: 算子使用的存储（例如 GPU 显存）大小
+        bandwidth:
+          type: string
+          description: 算子的带宽，由 memory 除以 device self time 并转换单位得到
+        in_shapes:
+          type: string
+          description: 算子输入张量的形状
+        out_shapes:
+          type: string
+          description: 算子输出张量的形状
+          
+    Worker:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: worker ID
+        name:
+          type: string
+          description: worker名称
+        ip:
+          type: string
+          description: worker ip
+        platform:
+          type: string
+          description: worker平台架构
+        mge_version:
+          type: array
+          items: 
+            type: string
+          description: worker上有的MegEngine Version
+        auth:
+          type: string
+          description: worker是public/private
+    
+    WorkerList:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Worker'
+    
+    UserInfo:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: 用户 ID
+        email:
+          type: string
+          description: 用户邮箱
+        roles:
+          type: array
+          items: 
+            type: string
+          description: 用户权限
+        workers:
+          type: array
+          items: 
+            type: string
+          description: 用户可用的私有worker名称列表
+        
+    
+    UsersList:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserInfo'
+    
+    Version:
+      type: object
+      properties:
+        platform:
+          type: string
+          description: 运行平台，如x86、arm、cuda等
+        mgeVersion:
+          type: string
+          description: MegEngine版本号
+    
+    VersionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        flag:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Version'
+    
+    
+  
+  
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
