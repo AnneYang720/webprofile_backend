@@ -60,6 +60,7 @@ def getInfo():
     data = user_cl.find({"_id":ObjectId(userId)},{"_id": 1, "email": 1, "roles": 1})[0]
     return jsonify(code=RET.OK, flag=True, message='获取用户信息成功', data={"id":str(data["_id"]),"roles":data["roles"],"email":data["email"]})
 
+# TODO 用户个人更改信息
 
 @token_auth.verify_token
 def verify_token(token):

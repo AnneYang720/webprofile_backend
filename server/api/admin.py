@@ -30,7 +30,7 @@ def getAllUser():
     usersList = list(data)
     for user in usersList:
         user["_id"] = str(user["_id"])
-    return jsonify(code=RET.OK, flag=True, message='获取所有worker信息成功', data=usersList)
+    return jsonify(code=RET.OK, flag=True, message='获取所有用户信息成功', data=usersList)
 
 
 # 获取所有私有设备的信息
@@ -41,7 +41,7 @@ def getPrivateWorkersList():
     privateWorkersList = list(data)
     for worker in privateWorkersList:
         worker["_id"] = str(worker["_id"])
-    return jsonify(code=RET.OK, flag=True, message='获取所有worker信息成功', data=privateWorkersList)
+    return jsonify(code=RET.OK, flag=True, message='获取所有私有worker信息成功', data=privateWorkersList)
 
 
 #  给某用户添加某私有worker
@@ -106,7 +106,7 @@ def delAdmin():
     return jsonify(code=RET.OK, flag=True, message='删除管理员成功')
 
 
-# 修改用户密码
+# 管理员修改用户密码
 @admin_blue.route('/changepwd', methods=['POST'])
 @token_auth.login_required(role='admin')
 def changePwd():
@@ -121,4 +121,4 @@ def changePwd():
 
     user_cl.update({"email":email},{"$set":{"password":User.generate_password(password)}})
     
-    return jsonify(re_code=RET.OK, flag=True, message='修改密码')
+    return jsonify(re_code=RET.OK, flag=True, message='修改密码成功')

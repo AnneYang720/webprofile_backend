@@ -62,20 +62,20 @@ class User():
 
 
 class TaskArgs():
-    def __init__(self, form):
-        self.taskId = form.get('taskId')
-        self.top = 3 if form.get('top')=="" else form.get('top')
-        self.type = None if form.get('type')==[] else form.get('type')
-        self.aggregateBy = None if form.get('aggregateBy')=="" else form.get('aggregateBy')
-        self.oprName = None if form.get('oprName')=="" else form.get('oprName')
-        self.inputDtype = None if form.get('inputDtype')=="" else form.get('inputDtype')
-        self.topEndKey = "end" if form.get('topEndKey')=="" else form.get('topEndKey')
-        self.aggregate = None if form.get('aggregate')=="" else form.get('aggregate')
-        self.orderBy = "time" if form.get('orderBy')=="" else form.get('orderBy')
-        self.copyTime = False if form.get('copyTime')==False else True
-        self.minTime = float("-inf") if form.get('minTime')=="" else float(form.get('minTime'))
-        self.maxTime = float("inf") if form.get('maxTime')=="" else float(form.get('maxTime'))
-        self.showHost = False if form.get('showHost')==False else True
+    def __init__(self, args):
+        self.taskId = args.get('taskId')
+        self.top = 3 if args.get('top')=="" else args.get('top')
+        self.type = None if args.get('type')==[] else args.get('type')
+        self.aggregateBy = None if args.get('aggregateBy')=="" else args.get('aggregateBy')
+        self.oprName = None if args.get('oprName')=="" else args.get('oprName')
+        self.inputDtype = None if args.get('inputDtype')=="" else args.get('inputDtype')
+        self.topEndKey = "end" if args.get('topEndKey')=="" else args.get('topEndKey')
+        self.aggregate = None if args.get('aggregate')=="" else args.get('aggregate')
+        self.orderBy = "time" if args.get('orderBy')=="" else args.get('orderBy')
+        self.copyTime = False if args.get('copyTime')==False else True
+        self.minTime = float("-inf") if args.get('minTime')=="" else float(args.get('minTime'))
+        self.maxTime = float("inf") if args.get('maxTime')=="" else float(args.get('maxTime'))
+        self.showHost = False if args.get('showHost')==False else True
         self.profilePath = None
 
     

@@ -40,13 +40,13 @@ def newWorker():
     return jsonify(code=RET.OK, flag=True, message='新worker注册成功', data=str(workerId))
 
 
-# worker更新
+# worker心跳更新
 @worker_blue.route('/worker/update', methods=['POST'])
 def workerUpdate():
     workerId = request.form.get('id')
     state = request.form.get('state')
     worker_cl.update({"_id":ObjectId(workerId)},{"$set":{"state":state,"updateTime":int(time.time()*1000)}})
-    return jsonify(code=RET.OK, flag=True, message='worker状态更新成功')
+    return jsonify(code=RET.OK, flag=True, message='worker心跳状态更新成功')
 
 
 # 用户获取所有可用的worker列表
@@ -73,4 +73,4 @@ def getmyworkerslist():
 @token_auth.login_required
 def getWorkerInfo(chosenWorker):
     worker = list(worker_cl.find({"name":chosenWorker},{"platform":1,"mge_version":1}))[0]
-    return jsonify(code=RET.OK, flag=True, message='获取当前用户的workersList成功',data={"platform":worker['platform'],"mge_version":worker['mge_version']})
+    return jsonify(code=RET.OK, flag=True, message='获取当前选中worker的信息成功',data={"platform":worker['platform'],"mge_version":worker['mge_version']})

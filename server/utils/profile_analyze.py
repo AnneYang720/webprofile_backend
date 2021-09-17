@@ -172,7 +172,6 @@ class OprProfRst:
         self.footprint.update(footprint)
 
 
-
 class ProfileAnalyzer:
     def __init__(self, obj: dict, opr_filter: Callable = lambda opr, inp, out: True):
         """

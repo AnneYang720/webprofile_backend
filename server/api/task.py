@@ -19,7 +19,7 @@ import json
 
 task_cl = db.tasks # select the collection
 
-# 新建项目
+# 新建项目，返回文件上传至MINIO的预签名url
 @task_blue.route('/createurl', methods=['POST'])
 @token_auth.login_required
 def createTask():
@@ -68,7 +68,7 @@ def createTask():
         response_headers={"response-content-type": "application/json"},
     )
     
-    return jsonify(code=RET.OK, flag=True, message='生成上传url成功', data={"mgeUrl":mge_url,"dataUrl":data_url,"taskId":str(taskId)})
+    return jsonify(code=RET.OK, flag=True, message='用户创建任务后，生成上传MGE模型和数据文件至MINIO的url成功', data={"mgeUrl":mge_url,"dataUrl":data_url,"taskId":str(taskId)})
 
 
 
@@ -90,7 +90,7 @@ def saveTaskInfo():
     else :
         task_cl.delete_one({"_id":ObjectId(taskId)})
     
-    return jsonify(code=RET.OK, flag=True, message='任务状态更新成功')
+    return jsonify(code=RET.OK, flag=True, message='创建任务后，文件上传成功，任务成功初始化')
 
 
 # 获取当前用户的所有task信息
@@ -115,15 +115,21 @@ def getTasksID():
     data = []
     for task in tasks:
         data.append(str(task["_id"]))
-    return jsonify(code=RET.OK, flag=True, message='获取所有任务信息成功', data=data)
+    return jsonify(code=RET.OK, flag=True, message='获取所有任务ID成功', data=data)
 
 
 # 获得任务Profile
-# TODO 解决安全问题（最简单：验证taskId格式）
 @task_blue.route('/taskprofile', methods=['POST'])
 @token_auth.login_required
 def taskProfile():
     taskArgs = TaskArgs(request.json)
+
+    # 判断任务是否存在
+    tmpTask = task_cl.find_one({"_id":ObjectId(taskArgs.taskId)})
+    if not tmpTask:
+        return jsonify(code=RET.NODATA, flag=False, message='该任务不存在')
+    if tmpTask['userId'] != g.user['_id']: # get userid
+        return jsonify(code=RET.NODATA, flag=False, message='您没有该任务的权限')
 
     # download profile.txt from minio
     output_key = "output/"+ taskArgs.taskId
@@ -142,7 +148,7 @@ def taskProfile():
 
     tot_dev_time,tot_host_time,deviceList,hostList = profile(taskArgs)
     
-    return jsonify(code=RET.OK, flag=True, message='打印信息成功',tot_dev_time=tot_dev_time,tot_host_time=tot_host_time,deviceList=deviceList,hostList=hostList)
+    return jsonify(code=RET.OK, flag=True, message='获得任务Profile信息成功',tot_dev_time=tot_dev_time,tot_host_time=tot_host_time,deviceList=deviceList,hostList=hostList)
 
 # 模型可视化
 @task_blue.route('/netvisualize/<taskId>', methods=['GET'])
@@ -162,7 +168,7 @@ def netVisualize(taskId):
 
     try:
         client.stat_object("minio-webprofile", log_key)
-        return jsonify(code=RET.OK, flag=True, message='获取log的url成功', data = log_url)
+        return jsonify(code=RET.OK, flag=True, message='模型可视化时，获取log的url成功', data = log_url)
 
     except S3Error as err:
         pass
@@ -180,7 +186,7 @@ def netVisualize(taskId):
     except Exception as err:
         return jsonify(code=RET.THIRDERR, flag=False, message=str(err))
     
-    return jsonify(code=RET.OK, flag=True, message='获取log的url成功', data = log_url)
+    return jsonify(code=RET.OK, flag=True, message='模型可视化时，获取log的url成功', data = log_url)
 
 
 # 任务失败信息
@@ -198,7 +204,7 @@ def getFailInfoUrl(taskId):
         response_headers={"response-content-disposition": f'attachment; filename={filename}'},
     )
 
-    return jsonify(code=RET.OK, flag=True, message='获取结果的url成功', data = output_url)
+    return jsonify(code=RET.OK, flag=True, message='任务失败，获取失败结果的url成功', data = output_url)
 
 
 # worker获取task文件的下载url
@@ -224,7 +230,7 @@ def getTasksUrl(taskId):
         expires=timedelta(days=1),
     )
 
-    return jsonify(code=RET.OK, flag=True, message='生成下载url成功', data={"mgeUrl":mge_url,"dataUrl":data_url})
+    return jsonify(code=RET.OK, flag=True, message='worker获取文件，生成文件下载url成功', data={"mgeUrl":mge_url,"dataUrl":data_url})
 
 # worker上任务运行/完成/失败，更新数据库中任务状态
 @task_blue.route('/updatestate', methods=['POST'])
