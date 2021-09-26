@@ -29,13 +29,13 @@ class User():
 
     # 生成确认身份的Token(密令)
     def generate_user_token(id, expiration=43200):
-        s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
+        s = Serializer(current_app.config['JWT_SECRET_KEY'], expires_in=expiration)
         return s.dumps({'id': str(id)}).decode('utf-8')
  
     # 解析token，确认登录的用户身份
     @staticmethod
     def verify_auth_token(token):
-        s = Serializer(current_app.config['SECRET_KEY'])
+        s = Serializer(current_app.config['JWT_SECRET_KEY'])
         try:
             data = s.loads(token)
         except SignatureExpired:

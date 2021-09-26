@@ -19,7 +19,8 @@ client = Minio(
     endpoint=config[APP_ENV].M_ENDPOINT,
     access_key=config[APP_ENV].M_ACCESS_KEY,
     secret_key=config[APP_ENV].M_SECRET_KEY,
-    region=config[APP_ENV].M_REGION
+    region=config[APP_ENV].M_REGION,
+    secure=False
 )
 
 #创建auth
@@ -30,13 +31,14 @@ mongo_conn = MongoClient(host=config[APP_ENV].MONGO_HOST,port=config[APP_ENV].MO
 db = mongo_conn[config[APP_ENV].MONGO_DATABASE] # Select the database
 
 #创建MQ连接
-credentials = pika.PlainCredentials('webprofile', 'webprofile')
+credentials = pika.PlainCredentials(config[APP_ENV].MQ_USERNAME, config[APP_ENV].MQ_PASSWORD)
 connection = pika.BlockingConnection(pika.ConnectionParameters(
     host=config[APP_ENV].MQ_HOST, virtual_host='/', credentials=credentials, heartbeat=0))
 channel = connection.channel()
 channel.exchange_declare(exchange=config[APP_ENV].MQ_EXCHANGE, exchange_type='direct')
 
 if __name__ == "__main__":
+    # TODO 插入默认admin
     # print(app.url_map)
     manager.debug = True
     manager.run()

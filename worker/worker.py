@@ -12,7 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # TODO MQ自己的心跳机制
 credentials = pika.PlainCredentials('webprofile', 'webprofile')
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-    host='localhost', virtual_host='/', credentials=credentials))
+    host=Config.MQ_HOST, port=Config.MQ_PORT, virtual_host='/', credentials=credentials))
 channel = connection.channel()
 
 channel.queue_declare(queue=Config.NAME, durable=True)

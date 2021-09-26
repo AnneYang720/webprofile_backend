@@ -133,21 +133,13 @@ def taskProfile():
 
     # download profile.txt from minio
     output_key = "output/"+ taskArgs.taskId
-    profile_url = client.get_presigned_url(
-        method="GET",
-        bucket_name="minio-webprofile",
-        object_name=output_key,
-        expires=timedelta(hours=2),
-    )
-    r_download_data = requests.get(profile_url)
-    with open("/data/evangelineyang/mgedemo/backend/server/api/profile_"+taskArgs.taskId+".txt", "wb") as data:
-        data.write(r_download_data.content)
-    data.close()
 
-    taskArgs.setProfilePath("/data/evangelineyang/mgedemo/backend/server/api/profile_"+taskArgs.taskId+".txt")
+    with tempfile.NamedTemporaryFile() as profile_tf:
+        client.fget_object("minio-webprofile", output_key, profile_tf.name)
 
-    tot_dev_time,tot_host_time,deviceList,hostList = profile(taskArgs)
-    
+        taskArgs.setProfilePath(profile_tf.name)
+        tot_dev_time,tot_host_time,deviceList,hostList = profile(taskArgs)
+
     return jsonify(code=RET.OK, flag=True, message='获得任务Profile信息成功',tot_dev_time=tot_dev_time,tot_host_time=tot_host_time,deviceList=deviceList,hostList=hostList)
 
 # 模型可视化
@@ -173,18 +165,18 @@ def netVisualize(taskId):
     except S3Error as err:
         pass
 
-    try:
-        with tempfile.NamedTemporaryFile() as mge_tf, tempfile.TemporaryDirectory() as log_td:
-            client.fget_object('minio-webprofile', mge_key, mge_tf.name)
+    # try:
+    with tempfile.NamedTemporaryFile() as mge_tf, tempfile.TemporaryDirectory() as log_td:
+        client.fget_object('minio-webprofile', mge_key, mge_tf.name)
 
-            visualize(mge_tf.name, log_td)
+        visualize(mge_tf.name, log_td)
 
-            # TODO: 文件找不到
-            log_name = glob.glob(log_td+'/*.tfevents*')[0]
-            client.fput_object('minio-webprofile', log_key, log_name,
-                content_type='application/octet-stream')
-    except Exception as err:
-        return jsonify(code=RET.THIRDERR, flag=False, message=str(err))
+        # TODO: 文件找不到
+        log_name = glob.glob(log_td+'/*.tfevents*')[0]
+        client.fput_object('minio-webprofile', log_key, log_name,
+            content_type='application/octet-stream')
+    # except Exception as err:
+    #     return jsonify(code=RET.THIRDERR, flag=False, message=str(err))
     
     return jsonify(code=RET.OK, flag=True, message='模型可视化时，获取log的url成功', data = log_url)
 
