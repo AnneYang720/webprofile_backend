@@ -1,0 +1,60 @@
+version: '3.1'
+
+
+services:
+  backend:
+    image: "webprofile_backend:latest"
+    restart: always
+    environment:
+      APP_MONGO_HOST: mongo
+      APP_MONGO_USERNAME: root
+      APP_MONGO_PWD: root
+      APP_MONGO_DATABASE: webprofile
+      APP_M_ACCESS_KEY: minioadmin
+      APP_M_SECRET_KEY: M10IOisAwes0me
+      APP_MQ_HOST: rabbitmq
+    env_file:
+      - config.env
+    depends_on:
+      - mongo
+      - minio
+      - rabbitmq
+
+  web:
+    image: "webprofile_web:latest"
+    env_file:
+      - config.env
+
+  nginx:
+    image: "webprofile_nginx:latest"
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - web
+      - minio
+
+  minio:
+    image: "minio/minio:RELEASE.2021-04-22T15-44-28Z"
+    volumes:
+      - ./data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: M10IOisAwes0me
+    command: server /data
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    env_file:
+      - config.env
